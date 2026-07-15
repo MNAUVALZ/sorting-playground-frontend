@@ -5,7 +5,7 @@ interface AlgorithmCardProps {
   title: string;
   description: string;
   complexity: string;
-  difficulty: 'Pemula' | 'Menengah' | 'Lanjutan';
+  difficulty: string;
   slug: string;
   stepsCount: string;
   journalRef: string;
@@ -20,16 +20,16 @@ export default function AlgorithmCard({
   stepsCount,
   journalRef,
 }: AlgorithmCardProps) {
-  const badgeColor = {
+  const badgeColors: Record<string, string> = {
     Pemula: 'bg-emerald-100 text-emerald-800 border-emerald-200',
     Menengah: 'bg-amber-100 text-amber-800 border-amber-200',
     Lanjutan: 'bg-rose-100 text-rose-800 border-rose-200',
-  }[difficulty];
+  };
+  const badgeColor = badgeColors[difficulty] || 'bg-blue-100 text-blue-800 border-blue-200';
 
   return (
     <div className="bg-dicoding-card rounded-xl border border-dicoding-border p-6 flex flex-col justify-between hover:shadow-dicoding-hover hover:-translate-y-1 transition-all duration-300 group">
       <div>
-        {/* Header Kartu: Badge Kesulitan & Kompleksitas */}
         <div className="flex items-center justify-between gap-2 mb-4">
           <span className={`text-xs font-semibold px-2.5 py-1 rounded-full border ${badgeColor}`}>
             {difficulty}
@@ -39,7 +39,6 @@ export default function AlgorithmCard({
           </span>
         </div>
 
-        {/* Judul & Deskripsi Modul */}
         <h3 className="text-xl font-bold text-dicoding-navy group-hover:text-dicoding-blue transition-colors mb-2">
           {title}
         </h3>
@@ -47,7 +46,6 @@ export default function AlgorithmCard({
           {description}
         </p>
 
-        {/* Kutipan Jurnal Ilmiah */}
         <div className="mb-6 p-2.5 bg-slate-50 rounded-lg border border-slate-150 text-xs text-slate-600 flex items-start gap-2">
           <span className="text-sm">📖</span>
           <div>
@@ -58,7 +56,6 @@ export default function AlgorithmCard({
       </div>
 
       <div>
-        {/* Info Tambahan */}
         <div className="grid grid-cols-2 gap-2 py-3 border-y border-slate-100 mb-6 text-xs text-dicoding-text">
           <div className="flex items-center gap-1.5 font-medium">
             <span>📊</span> {stepsCount}
@@ -68,7 +65,6 @@ export default function AlgorithmCard({
           </div>
         </div>
 
-        {/* Tombol Navigasi Aksi */}
         <div className="flex items-center gap-3">
           <Link
             href={`/algorithm/${slug}`}

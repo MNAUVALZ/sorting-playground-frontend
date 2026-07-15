@@ -2,7 +2,6 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
-// Database Materi Berbasis Jurnal Ilmiah
 const journalMaterials: Record<string, {
   title: string;
   badge: string;
@@ -104,9 +103,10 @@ end procedure`,
   }
 };
 
-export default async function AlgorithmDetailPage({ params }: { params: Promise<{ slug: string }> }) {
-  const resolvedParams = await params;
-  const material = journalMaterials[resolvedParams.slug];
+// Menggunakan tipe 'any' dan Promise.resolve agar lolos kompilasi di Next.js versi 13, 14, maupun 15
+export default async function AlgorithmDetailPage({ params }: any) {
+  const resolvedParams = await Promise.resolve(params);
+  const material = journalMaterials[resolvedParams?.slug];
 
   if (!material) {
     notFound();
@@ -115,7 +115,6 @@ export default async function AlgorithmDetailPage({ params }: { params: Promise<
   return (
     <div className="min-h-screen bg-dicoding-bg py-12 px-6">
       <div className="max-w-4xl mx-auto">
-        {/* Tombol Kembali */}
         <Link 
           href="/" 
           className="inline-flex items-center gap-2 text-sm font-semibold text-dicoding-blue hover:underline mb-8"
@@ -123,9 +122,7 @@ export default async function AlgorithmDetailPage({ params }: { params: Promise<
           ← Kembali ke Katalog Modul
         </Link>
 
-        {/* Kontainer Modul Utama ala Dicoding */}
         <article className="bg-white rounded-2xl border border-dicoding-border p-8 md:p-12 shadow-sm">
-          {/* Header Modul */}
           <span className="px-3 py-1 bg-blue-50 text-dicoding-blue border border-blue-200 rounded-full text-xs font-bold uppercase tracking-wider">
             {material.badge}
           </span>
@@ -133,13 +130,13 @@ export default async function AlgorithmDetailPage({ params }: { params: Promise<
             {material.title}
           </h1>
 
-          {/* Abstrak / Kutipan Jurnal */}
           <div className="bg-slate-50 border-l-4 border-dicoding-blue p-6 rounded-r-xl mb-10">
             <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-2">
               <span>🏛️</span> Abstrak & Latar Belakang Riset Jurnal
             </h3>
+            {/* Menggunakan entitas &quot; agar tidak memicu eror ESLint unescaped entities di Vercel */}
             <p className="text-slate-700 leading-relaxed italic text-sm md:text-base">
-              "{material.abstract}"
+              &quot;{material.abstract}&quot;
             </p>
             <div className="mt-4 pt-4 border-t border-slate-200 text-xs font-mono text-slate-600">
               <span className="font-bold">Referensi:</span> {material.citation} <br/>
@@ -147,7 +144,6 @@ export default async function AlgorithmDetailPage({ params }: { params: Promise<
             </div>
           </div>
 
-          {/* Tabel Analisis Kompleksitas */}
           <h2 className="text-2xl font-bold text-dicoding-navy mb-4">
             ⚡ Analisis Kompleksitas Algoritma
           </h2>
@@ -166,7 +162,6 @@ export default async function AlgorithmDetailPage({ params }: { params: Promise<
             </div>
           </div>
 
-          {/* Mekanisme Kerja */}
           <h2 className="text-2xl font-bold text-dicoding-navy mb-4">
             🔄 Mekanisme Kerja Algoritma
           </h2>
@@ -176,7 +171,6 @@ export default async function AlgorithmDetailPage({ params }: { params: Promise<
             ))}
           </ol>
 
-          {/* Pseudocode */}
           <h2 className="text-2xl font-bold text-dicoding-navy mb-4">
             💻 Formal Pseudocode
           </h2>
@@ -184,7 +178,6 @@ export default async function AlgorithmDetailPage({ params }: { params: Promise<
             <pre>{material.pseudocode}</pre>
           </div>
 
-          {/* Call to Action ke Lab */}
           <div className="bg-gradient-to-r from-dicoding-navy to-dicoding-dark p-8 rounded-xl text-white flex flex-col md:flex-row items-center justify-between gap-6 shadow-lg">
             <div>
               <h3 className="text-xl font-bold mb-1">Siap menguji teori ini secara langsung?</h3>
