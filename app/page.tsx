@@ -1,87 +1,87 @@
 ﻿import React from 'react';
 import Navbar from '@/components/ui/Navbar';
 import Hero from '@/components/ui/Hero';
-import AlgorithmCard from '@/components/ui/AlgorithmCard';
 import Footer from '@/components/ui/Footer';
+import Link from 'next/link';
 
 export default function Home() {
-  const algorithms = [
-    {
-      title: "Bubble Sort",
-      description: "Berdasarkan tinjauan ACM SIGCSE, algoritma ini bekerja melalui pertukaran berulang pada elemen bersebelahan. Sangat relevan untuk pedagogi pemrograman karena merepresentasikan logika iteratif dasar.",
-      complexity: "O(n²)",
-      difficulty: "Pemula",
-      slug: "bubble-sort",
-      stepsCount: "5 - 10 Langkah",
-      journalRef: "Astrachan, O. (2003). Bubble sort: an archaeological algorithmic analysis. ACM SIGCSE Bulletin.",
-    },
-    {
-      title: "Selection Sort",
-      description: "Merujuk pada studi komparatif Mishra & Garg (2008), algoritma ini membagi sub-array dan meminimalkan operasi pertukaran memori (maksimal O(n) swap), sangat optimal untuk sistem dengan biaya tulis memori tinggi.",
-      complexity: "O(n²)",
-      difficulty: "Pemula",
-      slug: "selection-sort",
-      stepsCount: "7 - 12 Langkah",
-      journalRef: "Mishra, A. D., & Garg, D. (2008). Selection of best sorting algorithm. Int. J. of Intelligent Information Processing.",
-    },
-    {
-      title: "Insertion Sort",
-      description: "Dalam survei ACM Computing Surveys, algoritma adaptif ini terbukti memiliki efisiensi tinggi pada data berukuran kecil atau hampir terurut (nearly sorted), bekerja secara in-place bagaikan mengurutkan kartu remi.",
-      complexity: "O(n²)",
-      difficulty: "Menengah",
-      slug: "insertion-sort",
-      stepsCount: "6 - 15 Langkah",
-      journalRef: "Estivill-Castro, V., & Wood, D. (1992). A survey of adaptive sorting algorithms. ACM Computing Surveys.",
-    },
-    {
-      title: "Quick Sort",
-      description: "Ditemukan oleh Sir C. A. R. Hoare (1962), algoritma Divide & Conquer ini mempartisi array berdasarkan elemen pivot. Sangat efisien dan menjadi standar perpustakaan pengurutan di berbagai bahasa pemrograman modern.",
-      complexity: "O(n log n)",
-      difficulty: "Lanjutan",
-      slug: "quick-sort",
-      stepsCount: "10 - 25 Langkah",
-      journalRef: "Hoare, C. A. R. (1962). Quicksort. The Computer Journal, 5(1), 10-15.",
-    },
-  ];
-
   return (
     <div className="min-h-screen flex flex-col justify-between bg-slate-50">
-      {/* Navigasi Kaca Buram */}
       <Navbar />
 
       <main className="flex-1">
-        {/* Hero Section dengan Ilustrasi Balok */}
+        {/* Hero Section */}
         <Hero />
 
-        {/* Katalog Modul Algoritma */}
-        <section id="katalog" className="max-w-6xl mx-auto px-6 py-20 scroll-mt-16">
-          <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-4 border-b border-slate-200 pb-6">
-            <div>
-              <span className="text-xs font-bold text-blue-600 uppercase tracking-widest block mb-2">
-                Pilih Modul Pembelajaran
-              </span>
-              <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
-                Katalog Modul Algoritma
-              </h2>
-              <p className="text-sm sm:text-base text-slate-600 mt-2 max-w-2xl">
-                Materi dipadukan langsung dari publikasi ilmiah IEEE, ACM, dan literatur standar ilmu komputer dengan visualisasi waktu nyata.
-              </p>
-            </div>
-            <div className="inline-flex items-center gap-2 text-xs sm:text-sm font-bold text-blue-700 bg-blue-50 px-4 py-2 rounded-xl self-start md:self-auto border border-blue-200 shadow-sm shrink-0">
-              <span>📚</span> Total 4 Modul Tersedia
-            </div>
-          </div>
+        {/* Section Keunggulan Platform */}
+        <section className="py-20 px-6 bg-white border-b border-slate-200">
+          <div className="max-w-6xl mx-auto text-center">
+            <span className="text-xs font-bold text-blue-600 uppercase tracking-widest block mb-2">
+              Mengapa Memilih Platform Ini?
+            </span>
+            <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight mb-12">
+              Belajar Struktur Data Lebih Nyata dan Terukur
+            </h2>
 
-          {/* Grid Kartu Algoritma Responsif */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {algorithms.map((algo) => (
-              <AlgorithmCard key={algo.slug} {...algo} />
-            ))}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-left">
+              <div className="p-8 rounded-2xl bg-slate-50 border border-slate-200 hover:shadow-lg transition-all">
+                <div className="w-12 h-12 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center text-2xl font-bold mb-6">
+                  👁️
+                </div>
+                <h3 className="text-xl font-bold text-slate-900 mb-3">Visualisasi Interaktif</h3>
+                <p className="text-sm text-slate-600 leading-relaxed">
+                  Lihat langsung pergeseran variabel, proses partisi pivot, hingga penukaran memori secara proporsional di dalam kanvas visual.
+                </p>
+              </div>
+
+              <div className="p-8 rounded-2xl bg-slate-50 border border-slate-200 hover:shadow-lg transition-all">
+                <div className="w-12 h-12 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center text-2xl font-bold mb-6">
+                  🏛️
+                </div>
+                <h3 className="text-xl font-bold text-slate-900 mb-3">Literatur IEEE & ACM</h3>
+                <p className="text-sm text-slate-600 leading-relaxed">
+                  Tidak sekadar kode, setiap modul dilengkapi latar belakang akademis formal dari paper penemu asli (Hoare, Astrachan, Knuth).
+                </p>
+              </div>
+
+              <div className="p-8 rounded-2xl bg-slate-50 border border-slate-200 hover:shadow-lg transition-all">
+                <div className="w-12 h-12 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center text-2xl font-bold mb-6">
+                  ⚡
+                </div>
+                <h3 className="text-xl font-bold text-slate-900 mb-3">Benchmark Serentak</h3>
+                <p className="text-sm text-slate-600 leading-relaxed">
+                  Uji performa komputasi algoritma O(n²) melawan O(n log n) secara bersamaan pada deret angka yang sama untuk melihat efisiensinya.
+                </p>
+              </div>
+            </div>
+
+            {/* Banner Call to Action */}
+            <div className="mt-16 bg-gradient-to-r from-slate-900 to-blue-900 rounded-3xl p-10 sm:p-12 text-white flex flex-col sm:flex-row items-center justify-between gap-8 shadow-xl">
+              <div className="text-left space-y-2">
+                <h3 className="text-2xl sm:text-3xl font-extrabold">Siap Menjelajahi Seluruh Modul?</h3>
+                <p className="text-slate-300 text-sm max-w-md">
+                  Pilih materi teori di katalog atau langsung lompat ke dalam lab visualisasi interaktif.
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-4 shrink-0">
+                <Link 
+                  href="/catalog" 
+                  className="px-6 py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm rounded-xl shadow-md transition-all"
+                >
+                  Buka Katalog Modul 📚
+                </Link>
+                <Link 
+                  href="/comparison" 
+                  className="px-6 py-3.5 bg-white/10 hover:bg-white/20 text-white font-bold text-sm rounded-xl border border-white/20 transition-all"
+                >
+                  Bandingkan Algoritma ⚖️
+                </Link>
+              </div>
+            </div>
           </div>
         </section>
       </main>
 
-      {/* Footer EdTech Profesional */}
       <Footer />
     </div>
   );

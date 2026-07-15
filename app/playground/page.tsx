@@ -1,7 +1,8 @@
 ﻿"use client";
 
 import React, { useState, useEffect, useRef } from 'react';
-import Link from 'next/link';
+import Navbar from '@/components/ui/Navbar';
+import Footer from '@/components/ui/Footer';
 import ArrayBar from '@/components/visualizer/ArrayBar';
 
 export default function PlaygroundPage() {
@@ -15,6 +16,11 @@ export default function PlaygroundPage() {
   const [swappedIdx, setSwappedIdx] = useState<number[]>([]);
   const [sortedIdx, setSortedIdx] = useState<number[]>([]);
   
+  // Fitur Telemetri Real-Time
+  const [stepCount, setStepCount] = useState<number>(0);
+  const [compareCount, setCompareCount] = useState<number>(0);
+  const [swapCount, setSwapCount] = useState<number>(0);
+
   const [logs, setLogs] = useState<string[]>([
     "💬 System ready (Hybrid Architecture). Pilih algoritma atau masukkan deret angka manual, lalu klik 'Visualisasikan'."
   ]);
@@ -26,6 +32,12 @@ export default function PlaygroundPage() {
     }
   }, [logs]);
 
+  const resetTelemetry = () => {
+    setStepCount(0);
+    setCompareCount(0);
+    setSwapCount(0);
+  };
+
   const generateRandomArray = () => {
     if (isPlaying) return;
     const newArr = Array.from({ length: 10 }, () => Math.floor(Math.random() * 95) + 5);
@@ -33,6 +45,7 @@ export default function PlaygroundPage() {
     setComparingIdx([]);
     setSwappedIdx([]);
     setSortedIdx([]);
+    resetTelemetry();
     setLogs(prev => [...prev, `🔄 Array baru diacak: [${newArr.join(', ')}]`]);
   };
 
@@ -58,6 +71,7 @@ export default function PlaygroundPage() {
     setComparingIdx([]);
     setSwappedIdx([]);
     setSortedIdx([]);
+    resetTelemetry();
     addLog(`🛠️ Data manual berhasil diterapkan: [${parsed.join(', ')}]`);
     setCustomInput("");
   };
@@ -66,8 +80,6 @@ export default function PlaygroundPage() {
     setLogs(prev => [...prev.slice(-30), msg]);
   };
 
-  // --- MESIN KOMPUTASI LOKAL (OFFLINE FALLBACK ENGINE) ---
-  // Bertugas menghitung langkah visualisasi jika Cloud Railway sedang tidur/error
   const computeLocalSteps = (algo: string, initialArr: number[]) => {
     const steps: Array<{ array: number[]; comparing: number[]; swapped: boolean }> = [];
     const arr = [...initialArr];
@@ -143,13 +155,13 @@ export default function PlaygroundPage() {
     return steps;
   };
 
-  // Fungsi Utama Pemanggil Cloud API Railway dengan Auto-Fallback Lokal
   const handleSimulate = async () => {
     if (isPlaying) return;
     setIsPlaying(true);
     setComparingIdx([]);
     setSwappedIdx([]);
     setSortedIdx([]);
+    resetTelemetry();
     addLog(`🚀 Mengirim request ke Cloud Railway (Algoritma: ${algorithm.toUpperCase()})...`);
 
     let steps: Array<{ array: number[]; comparing: number[]; swapped: boolean }> = [];
@@ -157,7 +169,7 @@ export default function PlaygroundPage() {
 
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 6000); // Batasi tunggu cloud maksimal 6 detik
+      const timeoutId = setTimeout(() => controller.abort(), 6000);
 
       const response = await fetch('https://sorting-playground-backend-production.up.railway.app/api/simulate', {
         method: 'POST',
@@ -180,22 +192,18 @@ export default function PlaygroundPage() {
 
       const result = await response.json();
       steps = result.steps || [];
-      addLog(`✅ Sukses dari Cloud Railway! Memutar animasi dengan tempo ${speed}ms...`);
+      addLog(`✅ Sukses dari Cloud Railway! Memutar animasi...`);
 
     } catch (error: any) {
-      console.warn("Cloud Railway unavailable, switching to local fallback:", error);
       usedFallback = true;
-      const errorReason = error.name === 'AbortError' ? 'Timeout (Server Tidur)' : error.message || 'CORS/Network Error';
-      
-      addLog(`⚠️ Cloud Railway kendala (${errorReason}).`);
-      addLog(`⚡ Mengaktifkan Mesin Komputasi Lokal (Offline Fallback Engine)...`);
-      
-      // Hitung algoritma secara lokal di browser
+      addLog(`⚠️ Cloud Railway kendala. Beralih ke Mesin Komputasi Lokal (Offline Engine)...`);
       steps = computeLocalSteps(algorithm, array);
       addLog(`✅ Komputasi lokal selesai (${steps.length} langkah)! Memutar animasi...`);
     }
 
-    // Jalankan Loop Animasi
+    let currentCompares = 0;
+    let currentSwaps = 0;
+
     for (let i = 0; i < steps.length; i++) {
       const step = steps[i];
       
@@ -205,14 +213,19 @@ export default function PlaygroundPage() {
       const swap = step.swapped ? comp : [];
       setComparingIdx(comp);
       setSwappedIdx(swap);
+      setStepCount(i + 1);
 
       if (comp.length === 2) {
         const [idx1, idx2] = comp;
-        const prefix = usedFallback ? "[Local Engine]" : "[Cloud Engine]";
+        currentCompares++;
+        setCompareCount(currentCompares);
+
         if (step.swapped) {
-          addLog(`🔄 ${prefix} Swap: Elemen [${idx1}] (${step.array[idx1]}) ditukar dengan [${idx2}] (${step.array[idx2]})`);
+          currentSwaps++;
+          setSwapCount(currentSwaps);
+          addLog(`🔄 Swap: Elemen [${idx1}] (${step.array[idx1]}) ditukar dengan [${idx2}] (${step.array[idx2]})`);
         } else {
-          addLog(`🔍 ${prefix} Compare: Elemen [${idx1}] & [${idx2}] posisi sudah sesuai.`);
+          addLog(`🔍 Compare: Elemen [${idx1}] & [${idx2}] posisi sesuai.`);
         }
       }
 
@@ -222,7 +235,7 @@ export default function PlaygroundPage() {
     setSortedIdx(Array.from({ length: array.length }, (_, i) => i));
     setComparingIdx([]);
     setSwappedIdx([]);
-    addLog(`🎯 Visualisasi selesai sempurna! (${usedFallback ? 'Eksekusi: Local Browser Engine' : 'Eksekusi: Laravel Railway Cloud'})`);
+    addLog(`🎯 Visualisasi selesai! (${usedFallback ? 'Eksekusi: Local Engine' : 'Eksekusi: Railway Cloud'})`);
     setIsPlaying(false);
   };
 
@@ -230,20 +243,18 @@ export default function PlaygroundPage() {
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col justify-between">
-      <header className="bg-white border-b border-slate-200 px-6 py-4 shadow-sm sticky top-0 z-10">
+      <Navbar />
+
+      {/* Control Header Lab */}
+      <div className="bg-white border-b border-slate-200 px-6 py-4 shadow-sm">
         <div className="max-w-6xl mx-auto flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Link 
-                href="/" 
-                className="text-sm font-semibold text-blue-600 hover:underline bg-blue-50 px-3 py-1.5 rounded-xl border border-blue-100"
-              >
-                ← Kembali ke Katalog
-              </Link>
-              <h1 className="text-xl font-extrabold text-slate-900 flex items-center gap-2">
-                <span>🛠️</span> Interactive Algorithm Lab
-              </h1>
-            </div>
+          <div className="flex items-center gap-3">
+            <h1 className="text-xl font-extrabold text-slate-900 flex items-center gap-2">
+              <span>🛠️</span> Interactive Algorithm Lab
+            </h1>
+            <span className="hidden sm:inline-block px-2.5 py-1 bg-blue-50 text-blue-700 rounded-lg text-xs font-semibold border border-blue-100">
+              Real-time Simulation
+            </span>
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
@@ -262,31 +273,22 @@ export default function PlaygroundPage() {
             <div className="flex items-center gap-2 bg-slate-50 border border-slate-300 px-3 py-1.5 rounded-xl">
               <span className="text-xs font-bold text-slate-500">⏱️ Tempo:</span>
               <input
-                type="range"
-                min="50"
-                max="1000"
-                step="50"
-                value={speed}
-                onChange={(e) => setSpeed(Number(e.target.value))}
-                disabled={isPlaying}
+                type="range" min="50" max="1000" step="50" value={speed}
+                onChange={(e) => setSpeed(Number(e.target.value))} disabled={isPlaying}
                 className="w-20 accent-blue-600 cursor-pointer disabled:opacity-50"
               />
-              <span className="text-xs font-mono font-bold text-blue-600 w-11 text-right">
-                {speed}ms
-              </span>
+              <span className="text-xs font-mono font-bold text-blue-600 w-11 text-right">{speed}ms</span>
             </div>
 
             <button
-              onClick={generateRandomArray}
-              disabled={isPlaying}
+              onClick={generateRandomArray} disabled={isPlaying}
               className="px-3.5 py-2 bg-white border border-slate-300 text-slate-800 hover:bg-slate-50 font-semibold text-sm rounded-xl transition-all disabled:opacity-50 shadow-sm flex items-center gap-1.5"
             >
               <span>🔄</span> Acak
             </button>
 
             <button
-              onClick={handleSimulate}
-              disabled={isPlaying}
+              onClick={handleSimulate} disabled={isPlaying}
               className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm rounded-xl transition-all shadow-md disabled:opacity-50 flex items-center gap-2"
             >
               {isPlaying ? "⏳ Memutar..." : "▶ Visualisasikan"}
@@ -294,95 +296,80 @@ export default function PlaygroundPage() {
           </div>
         </div>
 
+        {/* Custom Input Toolbar */}
         <div className="max-w-6xl mx-auto mt-3 pt-3 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
           <span className="text-slate-500 font-medium">
-            💡 <strong className="text-slate-700">Tips Lab:</strong> Anda dapat menguji kasus khusus dengan memasukkan deret angka sendiri di sebelah kanan.
+            💡 <strong className="text-slate-700">Tips:</strong> Uji deret angka khusus untuk melihat kasus terburuk (Worst Case).
           </span>
-          
           <form onSubmit={handleApplyCustomInput} className="flex items-center gap-2">
             <input
-              type="text"
-              placeholder="Contoh: 15, 3, 88, 12, 45"
-              value={customInput}
-              onChange={(e) => setCustomInput(e.target.value)}
-              disabled={isPlaying}
+              type="text" placeholder="Contoh: 15, 3, 88, 12, 45" value={customInput}
+              onChange={(e) => setCustomInput(e.target.value)} disabled={isPlaying}
               className="bg-slate-50 border border-slate-300 rounded-xl px-3 py-1.5 text-xs font-mono w-52 sm:w-64 text-slate-900 outline-none focus:ring-2 focus:ring-blue-600 disabled:opacity-50 placeholder:text-slate-400"
             />
             <button
-              type="submit"
-              disabled={isPlaying || !customInput.trim()}
+              type="submit" disabled={isPlaying || !customInput.trim()}
               className="px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white font-semibold rounded-xl transition-all disabled:opacity-40 shadow-sm whitespace-nowrap"
             >
               📥 Set Data
             </button>
           </form>
         </div>
-      </header>
+      </div>
 
-      <main className="max-w-6xl mx-auto w-full px-6 py-8 flex-1 flex flex-col gap-8">
-        <div className="bg-white rounded-2xl border border-slate-200 p-6 md:p-10 shadow-sm flex flex-col justify-between min-h-[420px]">
+      <main className="max-w-6xl mx-auto w-full px-6 py-8 flex-1 flex flex-col gap-6">
+        {/* Panel Telemetri Real-Time */}
+        <div className="grid grid-cols-3 gap-4">
+          <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm text-center">
+            <span className="text-xs font-bold text-slate-400 uppercase block">Total Langkah</span>
+            <span className="text-2xl font-mono font-extrabold text-slate-900">{stepCount}</span>
+          </div>
+          <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm text-center">
+            <span className="text-xs font-bold text-amber-500 uppercase block">Perbandingan (Compare)</span>
+            <span className="text-2xl font-mono font-extrabold text-amber-600">{compareCount}</span>
+          </div>
+          <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm text-center">
+            <span className="text-xs font-bold text-rose-500 uppercase block">Pertukaran (Swap)</span>
+            <span className="text-2xl font-mono font-extrabold text-rose-600">{swapCount}</span>
+          </div>
+        </div>
+
+        {/* Kanvas Balok */}
+        <div className="bg-white rounded-2xl border border-slate-200 p-6 md:p-10 shadow-sm flex flex-col justify-between min-h-[400px]">
           <div className="flex items-center justify-between border-b border-slate-100 pb-4 mb-6">
             <div className="flex flex-wrap items-center gap-4 text-xs font-bold text-slate-600">
-              <span className="flex items-center gap-1.5">
-                <span className="w-3 h-3 rounded-full bg-blue-600 inline-block"></span> Belum Terurut
-              </span>
-              <span className="flex items-center gap-1.5">
-                <span className="w-3 h-3 rounded-full bg-amber-400 inline-block"></span> Sedang Dibandingkan
-              </span>
-              <span className="flex items-center gap-1.5">
-                <span className="w-3 h-3 rounded-full bg-rose-500 inline-block"></span> Bertukar Posisi (Swap)
-              </span>
-              <span className="flex items-center gap-1.5">
-                <span className="w-3 h-3 rounded-full bg-emerald-500 inline-block"></span> Posisi Terurut
-              </span>
+              <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-blue-600 inline-block"></span> Belum Terurut</span>
+              <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-amber-400 inline-block"></span> Dibandingkan</span>
+              <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-rose-500 inline-block"></span> Tukar Posisi (Swap)</span>
+              <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-emerald-500 inline-block"></span> Terurut</span>
             </div>
-            <div className="text-xs font-mono font-semibold text-slate-400 whitespace-nowrap">
-              Total Elemen: {array.length}
-            </div>
+            <div className="text-xs font-mono font-semibold text-slate-400">Total Elemen: {array.length}</div>
           </div>
 
           <div className="flex items-end justify-center gap-2 md:gap-4 flex-1 px-4 h-full">
             {array.map((val, idx) => (
               <ArrayBar
-                key={idx}
-                value={val}
-                maxValue={maxVal}
-                isComparing={comparingIdx.includes(idx)}
-                isSwapped={swappedIdx.includes(idx)}
-                isSorted={sortedIdx.includes(idx)}
+                key={idx} value={val} maxValue={maxVal}
+                isComparing={comparingIdx.includes(idx)} isSwapped={swappedIdx.includes(idx)} isSorted={sortedIdx.includes(idx)}
               />
             ))}
           </div>
         </div>
 
-        <div className="bg-slate-900 rounded-2xl border border-slate-800 p-6 shadow-lg flex flex-col h-64">
+        {/* Terminal Log */}
+        <div className="bg-slate-900 rounded-2xl border border-slate-800 p-6 shadow-lg flex flex-col h-56">
           <div className="flex items-center justify-between border-b border-slate-800 pb-3 mb-3">
             <span className="text-xs font-bold text-slate-400 flex items-center gap-2">
               <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
-              LIVE EXECUTION TERMINAL LOG (HYBRID CLOUD / LOCAL STREAM)
+              LIVE EXECUTION LOG STREAM
             </span>
-            <button 
-              onClick={() => setLogs(["💬 Terminal log dibersihkan."])}
-              className="text-xs text-slate-500 hover:text-slate-300 underline font-mono"
-            >
+            <button onClick={() => setLogs(["💬 Terminal log dibersihkan."])} className="text-xs text-slate-500 hover:text-slate-300 underline font-mono">
               Clear Log
             </button>
           </div>
-
-          <div 
-            ref={terminalRef} 
-            className="flex-1 overflow-y-auto font-mono text-xs space-y-1.5 pr-2 scrollbar-thin scrollbar-thumb-slate-700"
-          >
+          <div ref={terminalRef} className="flex-1 overflow-y-auto font-mono text-xs space-y-1 pr-2 scrollbar-thin scrollbar-thumb-slate-700">
             {logs.map((log, index) => (
-              <div 
-                key={index} 
-                className={
-                  log.includes("❌") || log.includes("⚠️") ? "text-rose-400 font-semibold" :
-                  log.includes("🎯") ? "text-emerald-400 font-bold" :
-                  log.includes("🚀") || log.includes("🛠️") || log.includes("⚡") ? "text-cyan-400 font-semibold" :
-                  log.includes("🔄") ? "text-amber-300" : "text-slate-300"
-                }
-              >
+              <div key={index} className={log.includes("❌") || log.includes("⚠️") ? "text-rose-400 font-semibold" : log.includes("🎯") ? "text-emerald-400 font-bold" : log.includes("🚀") || log.includes("🛠️") ? "text-cyan-400 font-semibold" : log.includes("🔄") ? "text-amber-300" : "text-slate-300"}>
                 <span className="text-slate-600 mr-2">[{new Date().toLocaleTimeString('id-ID')}]</span>
                 {log}
               </div>
@@ -391,9 +378,7 @@ export default function PlaygroundPage() {
         </div>
       </main>
 
-      <footer className="py-6 text-center text-xs text-slate-500 border-t border-slate-200 mt-12 bg-white">
-        Interactive Sorting Playground Hybrid Architecture • Powered by Next.js & Laravel Railway Cloud
-      </footer>
+      <Footer />
     </div>
   );
 }
