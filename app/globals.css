@@ -19,3 +19,38 @@ body {
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   transition-duration: 300ms;
 }
+
+/* HILANGKAN SCROLLBAR SECARA GLOBAL */
+::-webkit-scrollbar {
+  display: none;
+}
+html, body {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  transition: background-color 0.3s, color 0.3s;
+}
+
+/* OVERRIDE DARK MODE ANTI-BOCOR */
+html.dark { color-scheme: dark; }
+html.dark body { background-color: #0f172a !important; color: #f8fafc !important; }
+html.dark .bg-white { background-color: #1e293b !important; border-color: #334155 !important; }
+html.dark .bg-slate-50 { background-color: #0f172a !important; border-color: #1e293b !important; }
+html.dark .text-slate-900 { color: #f8fafc !important; }
+html.dark .text-slate-800 { color: #e2e8f0 !important; }
+html.dark .text-slate-700 { color: #cbd5e1 !important; }
+html.dark .text-slate-600 { color: #94a3b8 !important; }
+html.dark .border-slate-200 { border-color: #334155 !important; }
+html.dark .border-slate-100 { border-color: #1e293b !important; }
+html.dark .shadow-sm, html.dark .shadow-md, html.dark .shadow-lg, html.dark .shadow-xl { 
+  box-shadow: none !important; border: 1px solid #334155 !important; 
+}
+html.dark nav { background-color: rgba(15, 23, 42, 0.9) !important; border-color: #334155 !important; }
+
+/* KONDISI CSS UNTUK EKSPOR PDF (HANYA MENCETAK TABEL TRACE) */
+@media print {
+  body * { visibility: hidden; }
+  .print-area, .print-area * { visibility: visible; }
+  .print-area { position: absolute; left: 0; top: 0; width: 100%; }
+  nav, footer, .no-print { display: none !important; }
+  .bg-slate-900 { background-color: #fff !important; color: #000 !important; }
+}
