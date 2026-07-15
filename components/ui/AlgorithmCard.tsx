@@ -8,6 +8,7 @@ interface AlgorithmCardProps {
   difficulty: 'Pemula' | 'Menengah' | 'Lanjutan';
   slug: string;
   stepsCount: string;
+  journalRef: string;
 }
 
 export default function AlgorithmCard({
@@ -17,8 +18,8 @@ export default function AlgorithmCard({
   difficulty,
   slug,
   stepsCount,
+  journalRef,
 }: AlgorithmCardProps) {
-  // Menentukan warna badge kesulitan
   const badgeColor = {
     Pemula: 'bg-emerald-100 text-emerald-800 border-emerald-200',
     Menengah: 'bg-amber-100 text-amber-800 border-amber-200',
@@ -42,9 +43,18 @@ export default function AlgorithmCard({
         <h3 className="text-xl font-bold text-dicoding-navy group-hover:text-dicoding-blue transition-colors mb-2">
           {title}
         </h3>
-        <p className="text-sm text-dicoding-text-light line-clamp-3 mb-6 leading-relaxed">
+        <p className="text-sm text-dicoding-text-light line-clamp-3 mb-4 leading-relaxed">
           {description}
         </p>
+
+        {/* Kutipan Jurnal Ilmiah */}
+        <div className="mb-6 p-2.5 bg-slate-50 rounded-lg border border-slate-150 text-xs text-slate-600 flex items-start gap-2">
+          <span className="text-sm">📖</span>
+          <div>
+            <span className="font-semibold block text-slate-800">Sumber Literatur:</span>
+            <span className="italic">{journalRef}</span>
+          </div>
+        </div>
       </div>
 
       <div>
@@ -54,7 +64,7 @@ export default function AlgorithmCard({
             <span>📊</span> {stepsCount}
           </div>
           <div className="flex items-center gap-1.5 font-medium">
-            <span>⏱️</span> Real-time Lab
+            <span>⚡</span> In-Place Sort
           </div>
         </div>
 
