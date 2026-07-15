@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import React, { useState, use } from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import Navbar from '@/components/ui/Navbar';
@@ -231,12 +231,16 @@ end procedure`,
   }
 };
 
-export default function AlgorithmDetailPage({ params }: any) {
-  // Unwrapping params safely in Next.js 15+ Client Component
-  const resolvedParams = use(params as any);
-  const material = journalMaterials[resolvedParams?.slug];
+// PERBAIKAN: Menggunakan properti params sebagai Promise secara eksplisit untuk Next.js 15
+interface PageProps {
+  params: Promise<{ slug: string }>;
+}
 
-  // State untuk Kuis Interaktif
+export default function AlgorithmDetailPage({ params }: PageProps) {
+  // Gunakan React.use untuk mengekstrak param asinkron
+  const resolvedParams = React.use(params);
+  const material = journalMaterials[resolvedParams.slug];
+
   const [quizAnswers, setQuizAnswers] = useState<Record<number, number>>({});
   const [showFeedback, setShowFeedback] = useState<Record<number, boolean>>({});
 
@@ -377,7 +381,6 @@ export default function AlgorithmDetailPage({ params }: any) {
             <div className="mt-6 text-xs text-slate-500 font-mono">Referensi: {material.citation}</div>
           </section>
 
-          {/* SECTION KUIS EVALUASI (FITUR BARU TERINTEGRASI) */}
           <section className="pt-10 border-t-2 border-slate-100">
             <h2 className="text-2xl md:text-3xl font-extrabold text-slate-900 mb-2">Kuis Evaluasi Singkat</h2>
             <p className="text-sm text-slate-600 mb-8">Uji pemahaman teori Anda sebelum terjun bereksperimen ke Simulator.</p>
@@ -450,7 +453,6 @@ export default function AlgorithmDetailPage({ params }: any) {
             </div>
           </section>
 
-          {/* Bottom CTA (Lompat ke Simulator) */}
           <div className="mt-16 bg-blue-600 rounded-3xl p-10 text-center shadow-xl">
             <h3 className="text-2xl font-extrabold text-white mb-4">Lulus Ujian Teori?</h3>
             <p className="text-blue-100 mb-8 max-w-lg mx-auto">Terapkan logika Anda dengan mengatur tempo, mengubah deret array, dan melihat perpindahan memori secara visual di Simulator.</p>
