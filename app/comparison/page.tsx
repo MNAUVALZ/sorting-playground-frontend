@@ -28,10 +28,11 @@ export default function ComparisonPage() {
 
   const handleApplyCustomInput = (e: React.FormEvent) => {
     e.preventDefault();
+    // Perbaikan sintaks: menggunakan && untuk memisahkan kondisi
     const parsed = customInput
       .split(',')
       .map(str => parseInt(str.trim(), 10))
-      .filter(num => !isNaN(num) && num > 0 <= 1000);
+      .filter(num => !isNaN(num) && num > 0 && num <= 1000);
 
     if (parsed.length < 3) {
       alert("Masukkan minimal 3 angka valid berpemisah koma.");
@@ -125,7 +126,6 @@ export default function ComparisonPage() {
         };
       });
 
-      // Urutkan berdasarkan jumlah pertukaran (swaps) & langkah terkecil
       benchmarkData.sort((a, b) => (a.swaps + a.steps) - (b.swaps + b.steps));
       setResults(benchmarkData);
       setIsRunning(false);
@@ -137,7 +137,6 @@ export default function ComparisonPage() {
       <Navbar />
 
       <main className="flex-1 max-w-6xl mx-auto px-6 py-12 w-full">
-        {/* Header */}
         <div className="text-center max-w-3xl mx-auto mb-10">
           <span className="text-xs font-bold text-blue-600 uppercase tracking-widest block mb-2">
             Komparasi & Efisiensi Algoritma
@@ -150,7 +149,6 @@ export default function ComparisonPage() {
           </p>
         </div>
 
-        {/* Control Card */}
         <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm mb-10">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 pb-6 border-b border-slate-100">
             <div>
@@ -188,7 +186,6 @@ export default function ComparisonPage() {
           </form>
         </div>
 
-        {/* Hasil Tabel Benchmark */}
         {results ? (
           <div className="space-y-6 animate-fadeIn">
             <div className="flex items-center justify-between">
