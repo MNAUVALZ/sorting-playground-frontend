@@ -10,9 +10,9 @@ export default function Navbar() {
 
   const navLinks = [
     { name: 'Beranda', href: '/' },
-    { name: 'Katalog Modul', href: '/catalog' },
+    { name: 'Modul', href: '/catalog' },
     { name: 'Lab IDE Interaktif', href: '/playground' },
-    { name: '⚖️ Perbandingan Algoritma', href: '/comparison' },
+    { name: '⚖️ Perbandingan', href: '/comparison' },
   ];
 
   return (
@@ -26,7 +26,7 @@ export default function Navbar() {
         </Link>
 
         {/* Desktop Menu */}
-        <div className="hidden md:flex items-center gap-6 font-semibold text-sm">
+        <div className="hidden md:flex items-center gap-8 font-semibold text-sm">
           {navLinks.map((link) => {
             const isActive = pathname === link.href;
             return (
@@ -63,7 +63,7 @@ export default function Navbar() {
 
       {/* Mobile Menu Dropdown */}
       {isOpen && (
-        <div className="md:hidden bg-white border-b border-slate-200 px-6 py-4 space-y-3 shadow-lg">
+        <div className="md:hidden bg-white border-b border-slate-200 px-6 py-4 space-y-3 shadow-lg animate-fadeIn">
           {navLinks.map((link) => (
             <Link 
               key={link.href}

@@ -5,6 +5,12 @@ import Navbar from '@/components/ui/Navbar';
 import Footer from '@/components/ui/Footer';
 import ArrayBar from '@/components/visualizer/ArrayBar';
 
+interface LogItem {
+  time: string;
+  type: 'INFO' | 'PIVOT' | 'COMPARE' | 'SWAP' | 'SORTED' | 'ERROR';
+  text: string;
+}
+
 export default function PlaygroundPage() {
   const [array, setArray] = useState<number[]>([45, 12, 88, 33, 5, 67, 23, 91, 18, 50]);
   const [algorithm, setAlgorithm] = useState<string>('bubble');
@@ -16,13 +22,13 @@ export default function PlaygroundPage() {
   const [swappedIdx, setSwappedIdx] = useState<number[]>([]);
   const [sortedIdx, setSortedIdx] = useState<number[]>([]);
   
-  // Fitur Telemetri Real-Time
   const [stepCount, setStepCount] = useState<number>(0);
   const [compareCount, setCompareCount] = useState<number>(0);
   const [swapCount, setSwapCount] = useState<number>(0);
 
-  const [logs, setLogs] = useState<string[]>([
-    "💬 System ready (Hybrid Architecture). Pilih algoritma atau masukkan deret angka manual, lalu klik 'Visualisasikan'."
+  // State Log Lengkap Terstruktur
+  const [logs, setLogs] = useState<LogItem[]>([
+    { time: new Date().toLocaleTimeString('id-ID'), type: 'INFO', text: "Sistem Lab siap. Pilih algoritma dan klik 'Visualisasikan' untuk memulai simulasi." }
   ]);
   const terminalRef = useRef<HTMLDivElement>(null);
 
@@ -31,6 +37,10 @@ export default function PlaygroundPage() {
       terminalRef.current.scrollTop = terminalRef.current.scrollHeight;
     }
   }, [logs]);
+
+  const addLog = (type: LogItem['type'], text: string) => {
+    setLogs(prev => [...prev, { time: new Date().toLocaleTimeString('id-ID'), type, text }]);
+  };
 
   const resetTelemetry = () => {
     setStepCount(0);
@@ -46,7 +56,7 @@ export default function PlaygroundPage() {
     setSwappedIdx([]);
     setSortedIdx([]);
     resetTelemetry();
-    setLogs(prev => [...prev, `🔄 Array baru diacak: [${newArr.join(', ')}]`]);
+    addLog('INFO', `Array baru diacak: [${newArr.join(', ')}]`);
   };
 
   const handleApplyCustomInput = (e: React.FormEvent) => {
@@ -59,11 +69,11 @@ export default function PlaygroundPage() {
       .filter(num => !isNaN(num) && num > 0 && num <= 500);
 
     if (parsed.length < 3) {
-      addLog("⚠️ Input gagal: Masukkan minimal 3 angka valid berpemisah koma (contoh: 10, 50, 23).");
+      addLog('ERROR', "Input gagal: Masukkan minimal 3 angka valid berpemisah koma (contoh: 10, 50, 23).");
       return;
     }
     if (parsed.length > 20) {
-      addLog("⚠️ Terlalu banyak elemen: Maksimal 20 angka agar visualisasi balok tetap optimal.");
+      addLog('ERROR', "Terlalu banyak elemen: Maksimal 20 angka agar visualisasi balok tetap optimal.");
       return;
     }
 
@@ -72,85 +82,76 @@ export default function PlaygroundPage() {
     setSwappedIdx([]);
     setSortedIdx([]);
     resetTelemetry();
-    addLog(`🛠️ Data manual berhasil diterapkan: [${parsed.join(', ')}]`);
+    addLog('INFO', `Deret angka manual berhasil diset: [${parsed.join(', ')}]`);
     setCustomInput("");
   };
 
-  const addLog = (msg: string) => {
-    setLogs(prev => [...prev.slice(-30), msg]);
-  };
-
   const computeLocalSteps = (algo: string, initialArr: number[]) => {
-    const steps: Array<{ array: number[]; comparing: number[]; swapped: boolean }> = [];
+    const steps: Array<{ array: number[]; comparing: number[]; swapped: boolean; logType: LogItem['type']; logMsg: string }> = [];
     const arr = [...initialArr];
     const n = arr.length;
 
     if (algo === 'bubble') {
       for (let i = 0; i < n - 1; i++) {
         for (let j = 0; j < n - i - 1; j++) {
-          steps.push({ array: [...arr], comparing: [j, j + 1], swapped: false });
+          steps.push({ array: [...arr], comparing: [j, j + 1], swapped: false, logType: 'COMPARE', logMsg: `Bandingkan elemen [${j}] (${arr[j]}) dengan [${j+1}] (${arr[j+1]})` });
           if (arr[j] > arr[j + 1]) {
-            const temp = arr[j];
-            arr[j] = arr[j + 1];
-            arr[j + 1] = temp;
-            steps.push({ array: [...arr], comparing: [j, j + 1], swapped: true });
+            const temp = arr[j]; arr[j] = arr[j + 1]; arr[j + 1] = temp;
+            steps.push({ array: [...arr], comparing: [j, j + 1], swapped: true, logType: 'SWAP', logMsg: `Tukar posisi: ${arr[j+1]} > ${arr[j]}, maka (${arr[j]}) digeser ke kanan` });
           }
         }
       }
     } else if (algo === 'selection') {
       for (let i = 0; i < n - 1; i++) {
         let minIdx = i;
+        steps.push({ array: [...arr], comparing: [i], swapped: false, logType: 'INFO', logMsg: `Batas indeks [${i}] (${arr[i]}) diset sebagai nilai minimum sementara` });
         for (let j = i + 1; j < n; j++) {
-          steps.push({ array: [...arr], comparing: [minIdx, j], swapped: false });
+          steps.push({ array: [...arr], comparing: [minIdx, j], swapped: false, logType: 'COMPARE', logMsg: `Pindai elemen [${j}] (${arr[j]}) apakah lebih kecil dari minimum sementara (${arr[minIdx]})` });
           if (arr[j] < arr[minIdx]) {
             minIdx = j;
+            steps.push({ array: [...arr], comparing: [minIdx], swapped: false, logType: 'INFO', logMsg: `Minimum baru ditemukan pada indeks [${minIdx}] (${arr[minIdx]})` });
           }
         }
         if (minIdx !== i) {
-          const temp = arr[i];
-          arr[i] = arr[minIdx];
-          arr[minIdx] = temp;
-          steps.push({ array: [...arr], comparing: [i, minIdx], swapped: true });
+          const temp = arr[i]; arr[i] = arr[minIdx]; arr[minIdx] = temp;
+          steps.push({ array: [...arr], comparing: [i, minIdx], swapped: true, logType: 'SWAP', logMsg: `Tukar posisi minimum [${minIdx}] (${arr[i]}) ke batas kiri terurut [${i}]` });
         }
       }
     } else if (algo === 'insertion') {
       for (let i = 1; i < n; i++) {
-        let key = arr[i];
-        let j = i - 1;
-        steps.push({ array: [...arr], comparing: [j, i], swapped: false });
+        let key = arr[i]; let j = i - 1;
+        steps.push({ array: [...arr], comparing: [i], swapped: false, logType: 'INFO', logMsg: `Ambil kartu/elemen [${i}] bernilai (${key}) untuk disisipkan` });
         while (j >= 0 && arr[j] > key) {
           arr[j + 1] = arr[j];
-          steps.push({ array: [...arr], comparing: [j, j + 1], swapped: true });
+          steps.push({ array: [...arr], comparing: [j, j + 1], swapped: true, logType: 'SWAP', logMsg: `Geser elemen (${arr[j]}) ke kanan karena lebih besar dari kunci (${key})` });
           j = j - 1;
         }
         arr[j + 1] = key;
+        steps.push({ array: [...arr], comparing: [j + 1], swapped: false, logType: 'INFO', logMsg: `Sisipkan kunci (${key}) tepat di posisi indeks [${j + 1}]` });
       }
     } else if (algo === 'quick') {
-      const quickSortHelper = (low: number, high: number) => {
+      const quickHelper = (low: number, high: number) => {
         if (low < high) {
           let pivot = arr[high];
+          steps.push({ array: [...arr], comparing: [high], swapped: false, logType: 'PIVOT', logMsg: `Partisi sub-array [${low}..${high}] -> Pilih elemen acuan Pivot: (${pivot})` });
           let i = low - 1;
           for (let j = low; j < high; j++) {
-            steps.push({ array: [...arr], comparing: [j, high], swapped: false });
+            steps.push({ array: [...arr], comparing: [j, high], swapped: false, logType: 'COMPARE', logMsg: `Bandingkan elemen [${j}] (${arr[j]}) <= Pivot (${pivot})` });
             if (arr[j] <= pivot) {
               i++;
-              const temp = arr[i];
-              arr[i] = arr[j];
-              arr[j] = temp;
-              if (i !== j) steps.push({ array: [...arr], comparing: [i, j], swapped: true });
+              const temp = arr[i]; arr[i] = arr[j]; arr[j] = temp;
+              if (i !== j) steps.push({ array: [...arr], comparing: [i, j], swapped: true, logType: 'SWAP', logMsg: `Pindahkan elemen lebih kecil (${arr[i]}) ke wilayah kiri pivot indeks [${i}]` });
             }
           }
-          const temp = arr[i + 1];
-          arr[i + 1] = arr[high];
-          arr[high] = temp;
-          if (i + 1 !== high) steps.push({ array: [...arr], comparing: [i + 1, high], swapped: true });
+          const temp = arr[i + 1]; arr[i + 1] = arr[high]; arr[high] = temp;
+          if (i + 1 !== high) steps.push({ array: [...arr], comparing: [i + 1, high], swapped: true, logType: 'SWAP', logMsg: `Tempatkan Pivot (${pivot}) tepat di posisi batas final indeks [${i + 1}]` });
           
           let pi = i + 1;
-          quickSortHelper(low, pi - 1);
-          quickSortHelper(pi + 1, high);
+          quickHelper(low, pi - 1);
+          quickHelper(pi + 1, high);
         }
       };
-      quickSortHelper(0, n - 1);
+      quickHelper(0, n - 1);
     }
     return steps;
   };
@@ -162,51 +163,16 @@ export default function PlaygroundPage() {
     setSwappedIdx([]);
     setSortedIdx([]);
     resetTelemetry();
-    addLog(`🚀 Mengirim request ke Cloud Railway (Algoritma: ${algorithm.toUpperCase()})...`);
+    addLog('INFO', `Memulai komputasi simulasi untuk algoritma: ${algorithm.toUpperCase()}...`);
 
-    let steps: Array<{ array: number[]; comparing: number[]; swapped: boolean }> = [];
-    let usedFallback = false;
-
-    try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 6000);
-
-      const response = await fetch('https://sorting-playground-backend-production.up.railway.app/api/simulate', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-        },
-        body: JSON.stringify({
-          algorithm: algorithm,
-          data: array,
-        }),
-        signal: controller.signal
-      });
-
-      clearTimeout(timeoutId);
-
-      if (!response.ok) {
-        throw new Error(`HTTP Error Status: ${response.status}`);
-      }
-
-      const result = await response.json();
-      steps = result.steps || [];
-      addLog(`✅ Sukses dari Cloud Railway! Memutar animasi...`);
-
-    } catch (error: any) {
-      usedFallback = true;
-      addLog(`⚠️ Cloud Railway kendala. Beralih ke Mesin Komputasi Lokal (Offline Engine)...`);
-      steps = computeLocalSteps(algorithm, array);
-      addLog(`✅ Komputasi lokal selesai (${steps.length} langkah)! Memutar animasi...`);
-    }
+    let steps = computeLocalSteps(algorithm, array);
+    addLog('INFO', `Komputasi selesai! Menghasilkan ${steps.length} langkah eksekusi animasi.`);
 
     let currentCompares = 0;
     let currentSwaps = 0;
 
     for (let i = 0; i < steps.length; i++) {
       const step = steps[i];
-      
       if (step.array) setArray(step.array);
       
       const comp = step.comparing || [];
@@ -215,27 +181,22 @@ export default function PlaygroundPage() {
       setSwappedIdx(swap);
       setStepCount(i + 1);
 
-      if (comp.length === 2) {
-        const [idx1, idx2] = comp;
+      if (step.logType === 'COMPARE') {
         currentCompares++;
         setCompareCount(currentCompares);
-
-        if (step.swapped) {
-          currentSwaps++;
-          setSwapCount(currentSwaps);
-          addLog(`🔄 Swap: Elemen [${idx1}] (${step.array[idx1]}) ditukar dengan [${idx2}] (${step.array[idx2]})`);
-        } else {
-          addLog(`🔍 Compare: Elemen [${idx1}] & [${idx2}] posisi sesuai.`);
-        }
+      } else if (step.logType === 'SWAP') {
+        currentSwaps++;
+        setSwapCount(currentSwaps);
       }
 
+      addLog(step.logType, step.logMsg);
       await new Promise(resolve => setTimeout(resolve, speed));
     }
 
     setSortedIdx(Array.from({ length: array.length }, (_, i) => i));
     setComparingIdx([]);
     setSwappedIdx([]);
-    addLog(`🎯 Visualisasi selesai! (${usedFallback ? 'Eksekusi: Local Engine' : 'Eksekusi: Railway Cloud'})`);
+    addLog('SORTED', `🎉 Seluruh elemen array telah terurut sempurna dalam ${steps.length} langkah!`);
     setIsPlaying(false);
   };
 
@@ -296,7 +257,6 @@ export default function PlaygroundPage() {
           </div>
         </div>
 
-        {/* Custom Input Toolbar */}
         <div className="max-w-6xl mx-auto mt-3 pt-3 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
           <span className="text-slate-500 font-medium">
             💡 <strong className="text-slate-700">Tips:</strong> Uji deret angka khusus untuk melihat kasus terburuk (Worst Case).
@@ -356,24 +316,47 @@ export default function PlaygroundPage() {
           </div>
         </div>
 
-        {/* Terminal Log */}
-        <div className="bg-slate-900 rounded-2xl border border-slate-800 p-6 shadow-lg flex flex-col h-56">
+        {/* Panel Log Poin-Poin Lengkap (Tanpa Batas 30 Baris!) */}
+        <div className="bg-slate-900 rounded-2xl border border-slate-800 p-6 shadow-lg flex flex-col h-72">
           <div className="flex items-center justify-between border-b border-slate-800 pb-3 mb-3">
             <span className="text-xs font-bold text-slate-400 flex items-center gap-2">
               <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
-              LIVE EXECUTION LOG STREAM
+              RIWAYAT EXECUTION LOG LENGKAP (POIN-POIN TERSTRUKTUR)
             </span>
-            <button onClick={() => setLogs(["💬 Terminal log dibersihkan."])} className="text-xs text-slate-500 hover:text-slate-300 underline font-mono">
-              Clear Log
-            </button>
+            <div className="flex items-center gap-4">
+              <span className="text-xs font-mono text-slate-500">Total Log: {logs.length} baris</span>
+              <button 
+                onClick={() => setLogs([{ time: new Date().toLocaleTimeString('id-ID'), type: 'INFO', text: "Terminal log dibersihkan." }])} 
+                className="text-xs text-slate-400 hover:text-white underline font-mono"
+              >
+                Clear Log
+              </button>
+            </div>
           </div>
-          <div ref={terminalRef} className="flex-1 overflow-y-auto font-mono text-xs space-y-1 pr-2 scrollbar-thin scrollbar-thumb-slate-700">
-            {logs.map((log, index) => (
-              <div key={index} className={log.includes("❌") || log.includes("⚠️") ? "text-rose-400 font-semibold" : log.includes("🎯") ? "text-emerald-400 font-bold" : log.includes("🚀") || log.includes("🛠️") ? "text-cyan-400 font-semibold" : log.includes("🔄") ? "text-amber-300" : "text-slate-300"}>
-                <span className="text-slate-600 mr-2">[{new Date().toLocaleTimeString('id-ID')}]</span>
-                {log}
-              </div>
-            ))}
+          
+          {/* Area Scroll Riwayat Log */}
+          <div ref={terminalRef} className="flex-1 overflow-y-auto font-mono text-xs space-y-2 pr-2 scrollbar-thin scrollbar-thumb-slate-700">
+            {logs.map((log, index) => {
+              let badgeColor = "bg-slate-800 text-slate-300 border-slate-700";
+              let label = "INFO";
+              if (log.type === 'PIVOT') { badgeColor = "bg-purple-900/60 text-purple-300 border-purple-700"; label = "🎯 PIVOT"; }
+              else if (log.type === 'COMPARE') { badgeColor = "bg-amber-900/60 text-amber-300 border-amber-700"; label = "🔍 COMPARE"; }
+              else if (log.type === 'SWAP') { badgeColor = "bg-rose-900/60 text-rose-300 border-rose-700 font-bold"; label = "🔄 SWAP"; }
+              else if (log.type === 'SORTED') { badgeColor = "bg-emerald-900/60 text-emerald-300 border-emerald-700 font-bold"; label = "🏆 SORTED"; }
+              else if (log.type === 'ERROR') { badgeColor = "bg-red-950 text-red-400 border-red-800 font-bold"; label = "❌ ERROR"; }
+
+              return (
+                <div key={index} className="flex items-start gap-2.5 leading-relaxed bg-slate-950/40 p-2 rounded-lg border border-slate-800/60 hover:border-slate-700 transition-colors">
+                  <span className="text-slate-600 shrink-0 select-none">[{log.time}]</span>
+                  <span className={`px-2 py-0.5 rounded text-[10px] font-bold border shrink-0 min-w-[75px] text-center ${badgeColor}`}>
+                    {label}
+                  </span>
+                  <span className={log.type === 'SWAP' ? "text-rose-200 font-semibold" : log.type === 'SORTED' ? "text-emerald-300 font-bold" : log.type === 'PIVOT' ? "text-purple-200 font-semibold" : "text-slate-300"}>
+                    {log.text}
+                  </span>
+                </div>
+              );
+            })}
           </div>
         </div>
       </main>
