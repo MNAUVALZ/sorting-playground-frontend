@@ -19,6 +19,7 @@ interface BenchmarkResult {
   compares: number;
   swaps: number;
   timeMs: number;
+  detailedLogs: string[];
 }
 
 interface RaceTrack {
@@ -33,23 +34,22 @@ export default function ComparisonPage() {
   const [customInput, setCustomInput] = useState<string>("");
   const [results, setResults] = useState<BenchmarkResult[] | null>(null);
   const [isRunning, setIsRunning] = useState<boolean>(false);
-
-  // Pilihan Algoritma (Filter Checkbox)
   const [selectedAlgos, setSelectedAlgos] = useState<string[]>(['quick', 'insertion', 'selection', 'bubble']);
 
-  // State Animasi Balap Serentak
+  // State Log Komparasi Per-Algoritma
+  const [activeLogTab, setActiveLogTab] = useState<string>('quick');
   const [raceTracks, setRaceTracks] = useState<RaceTrack[]>([]);
-  const [logs, setLogs] = useState<string[]>(["💬 Pilih minimal 2 algoritma yang ingin diadu, lalu klik 'Jalankan Benchmark & Balap Animasi'."]);
+  const [generalLogs, setGeneralLogs] = useState<string[]>(["💬 Pilih minimal 2 algoritma yang ingin diadu, lalu klik 'Jalankan Benchmark & Balap Animasi'."]);
   const terminalRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (terminalRef.current) {
       terminalRef.current.scrollTop = terminalRef.current.scrollHeight;
     }
-  }, [logs]);
+  }, [generalLogs, activeLogTab]);
 
-  const addLog = (msg: string) => {
-    setLogs(prev => [...prev, `[${new Date().toLocaleTimeString('id-ID')}] ${msg}`]);
+  const addGeneralLog = (msg: string) => {
+    setGeneralLogs(prev => [...prev, `[${new Date().toLocaleTimeString('id-ID')}] ${msg}`]);
   };
 
   const allAlgos: AlgoOption[] = [
@@ -78,7 +78,7 @@ export default function ComparisonPage() {
     setArray(newArr);
     setResults(null);
     setRaceTracks([]);
-    addLog(`🔄 Deret angka baru disiapkan: [${newArr.join(', ')}]`);
+    addGeneralLog(`🔄 Deret angka baru disiapkan: [${newArr.join(', ')}]`);
   };
 
   const handleApplyCustomInput = (e: React.FormEvent) => {
@@ -97,38 +97,40 @@ export default function ComparisonPage() {
     setResults(null);
     setRaceTracks([]);
     setCustomInput("");
-    addLog(`🛠️ Deret angka custom diset: [${parsed.join(', ')}]`);
+    addGeneralLog(`🛠️ Deret angka custom diset: [${parsed.join(', ')}]`);
   };
 
-  // Mesin Simulasi Balap & Benchmark Serentak
+  // Mesin Simulasi Balap dengan Durasi Diperlambat & Pencatatan Log Per-Algoritma
   const runSimultaneousBenchmark = async () => {
     if (isRunning) return;
     setIsRunning(true);
     setResults(null);
+    setActiveLogTab(selectedAlgos[0]);
     
-    // Inisialisasi Arena Balap
     const initialTracks: RaceTrack[] = selectedAlgos.map(id => {
       const algoObj = allAlgos.find(a => a.id === id);
       return { id, name: algoObj?.name || id, array: [...array], isDone: false };
     });
     setRaceTracks(initialTracks);
-    addLog(`🚀 Memulai kompetisi pengurutan untuk ${selectedAlgos.length} algoritma serentak!`);
+    addGeneralLog(`🚀 Memulai kompetisi pengurutan untuk ${selectedAlgos.length} algoritma serentak!`);
 
-    // Proses komputasi angka telemetri
     const benchmarkData: BenchmarkResult[] = selectedAlgos.map((id) => {
       const algoObj = allAlgos.find(a => a.id === id)!;
       const arr = [...array];
       const n = arr.length;
       let steps = 0; let compares = 0; let swaps = 0;
+      const detailedLogs: string[] = [`[INFO] Memulai simulasi ${algoObj.name} pada array awal: [${arr.join(', ')}]`];
       const startTime = performance.now();
 
       if (id === 'bubble') {
         for (let i = 0; i < n - 1; i++) {
           for (let j = 0; j < n - i - 1; j++) {
             steps++; compares++;
+            detailedLogs.push(`[COMPARE] Bandingkan elemen [${j}] (${arr[j]}) vs [${j+1}] (${arr[j+1]})`);
             if (arr[j] > arr[j + 1]) {
               const temp = arr[j]; arr[j] = arr[j + 1]; arr[j + 1] = temp;
               steps++; swaps++;
+              detailedLogs.push(`[SWAP] Tukar posisi (${arr[j+1]}) > (${arr[j]})`);
             }
           }
         }
@@ -142,13 +144,17 @@ export default function ComparisonPage() {
           if (minIdx !== i) {
             const temp = arr[i]; arr[i] = arr[minIdx]; arr[minIdx] = temp;
             steps++; swaps++;
+            detailedLogs.push(`[SWAP] Tukar posisi minimum (${arr[i]}) ke indeks [${i}]`);
           }
         }
       } else if (id === 'insertion') {
         for (let i = 1; i < n; i++) {
           let key = arr[i]; let j = i - 1; steps++; compares++;
+          detailedLogs.push(`[INFO] Ambil kunci (${key}) untuk disisipkan`);
           while (j >= 0 && arr[j] > key) {
-            arr[j + 1] = arr[j]; steps++; swaps++; j = j - 1;
+            arr[j + 1] = arr[j]; steps++; swaps++;
+            detailedLogs.push(`[SWAP] Geser (${arr[j]}) ke kanan`);
+            j = j - 1;
           }
           arr[j + 1] = key;
         }
@@ -156,15 +162,22 @@ export default function ComparisonPage() {
         const quickHelper = (low: number, high: number) => {
           if (low < high) {
             let pivot = arr[high]; let i = low - 1;
+            detailedLogs.push(`[PIVOT] Pilih Pivot: (${pivot}) pada rentang [${low}..${high}]`);
             for (let j = low; j < high; j++) {
               steps++; compares++;
               if (arr[j] <= pivot) {
                 i++; const temp = arr[i]; arr[i] = arr[j]; arr[j] = temp;
-                if (i !== j) { steps++; swaps++; }
+                if (i !== j) {
+                  steps++; swaps++;
+                  detailedLogs.push(`[SWAP] Pindahkan (${arr[i]}) ke kiri pivot`);
+                }
               }
             }
             const temp = arr[i + 1]; arr[i + 1] = arr[high]; arr[high] = temp;
-            if (i + 1 !== high) { steps++; swaps++; }
+            if (i + 1 !== high) {
+              steps++; swaps++;
+              detailedLogs.push(`[SWAP] Tempatkan Pivot (${pivot}) ke batas tengah indeks [${i+1}]`);
+            }
             let pi = i + 1;
             quickHelper(low, pi - 1);
             quickHelper(pi + 1, high);
@@ -173,24 +186,24 @@ export default function ComparisonPage() {
         quickHelper(0, n - 1);
       }
 
+      detailedLogs.push(`[SORTED] ✔️ Selesai dalam ${steps} langkah, ${compares} perbandingan, ${swaps} pertukaran.`);
       const endTime = performance.now();
       return {
         algo: id, name: algoObj.name, complexity: algoObj.complexity,
-        steps, compares, swaps, timeMs: Number((endTime - startTime).toFixed(3)) || 0.15
+        steps, compares, swaps, timeMs: Number((endTime - startTime).toFixed(3)) || 0.15,
+        detailedLogs
       };
     });
 
-    // Urutkan klasemen pemenang
     benchmarkData.sort((a, b) => (a.swaps + a.steps) - (b.swaps + b.steps));
 
-    // Putar Animasi Racing Visual Secara Bertahap (Tersinkronisasi)
-    addLog(`⚡ Memutar animasi pengurutan visual secara bertahap...`);
+    // Animasi Balap Diperlambat (900ms per putaran agar observasi nyaman!)
+    addGeneralLog(`⚡ Memutar balapan animasi visual (ditempo lebih lambat agar mudah diamati)...`);
     const sortedArrayFinal = [...array].sort((a, b) => a - b);
     
-    // Simulasikan balapan dengan durasi sesuai efisiensi (algoritma terbaik selesai lebih dulu!)
     for (let i = 0; i < benchmarkData.length; i++) {
       const winner = benchmarkData[i];
-      await new Promise(r => setTimeout(r, 450));
+      await new Promise(r => setTimeout(r, 900)); 
       
       setRaceTracks(prev => prev.map(track => {
         if (track.id === winner.algo) {
@@ -198,22 +211,22 @@ export default function ComparisonPage() {
         }
         return track;
       }));
-      addLog(`🏁 [FINISH Peringkat #${i + 1}] ${winner.name} menyelesaikan pengurutan dengan ${winner.swaps} kali pertukaran!`);
+      addGeneralLog(`🏁 [FINISH Peringkat #${i + 1}] ${winner.name} menyelesaikan pengurutan (${winner.swaps} pertukaran)!`);
     }
 
     setResults(benchmarkData);
     setIsRunning(false);
-    addLog(`🏆 Kompetisi selesai! ${benchmarkData[0].name} dinobatkan sebagai algoritma paling efisien pada uji coba ini.`);
+    addGeneralLog(`🏆 Balapan selesai! ${benchmarkData[0].name} menjadi juara efisiensi.`);
   };
 
   const maxVal = Math.max(...array, 100);
+  const activeResultObj = results?.find(r => r.algo === activeLogTab);
 
   return (
     <div className="min-h-screen flex flex-col justify-between bg-slate-50">
       <Navbar />
 
       <main className="flex-1 max-w-6xl mx-auto px-6 py-12 w-full">
-        {/* Header */}
         <div className="text-center max-w-3xl mx-auto mb-10">
           <span className="text-xs font-bold text-blue-600 uppercase tracking-widest block mb-2">
             Komparasi & Efisiensi Algoritma
@@ -226,7 +239,7 @@ export default function ComparisonPage() {
           </p>
         </div>
 
-        {/* Panel Kontrol & Filter Pemilihan Algoritma */}
+        {/* Control Filter Checkbox */}
         <div className="bg-white p-6 sm:p-8 rounded-2xl border border-slate-200 shadow-sm mb-8 space-y-6">
           <div>
             <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-3">
@@ -291,11 +304,11 @@ export default function ComparisonPage() {
           </form>
         </div>
 
-        {/* Live Racing Visualizer Grid (ANIMASI PENGURUTAN SERENTAK!) */}
+        {/* Live Racing Grid Arena */}
         {raceTracks.length > 0 && (
           <div className="mb-10 space-y-4 animate-fadeIn">
             <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-              <span>🏎️</span> Live Racing Visualizer Arena
+              <span>🏎️</span> Live Racing Visualizer Arena (Tempo Observasi)
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {raceTracks.map((track) => {
@@ -312,7 +325,6 @@ export default function ComparisonPage() {
                       </span>
                     </div>
 
-                    {/* Mini Kanvas Balok */}
                     <div className="flex items-end justify-center gap-1.5 flex-1 bg-slate-50 p-3 rounded-xl border border-slate-100 overflow-hidden">
                       {track.array.map((val, idx) => {
                         const heightPct = Math.max(15, Math.round((val / maxVal) * 100));
@@ -333,27 +345,67 @@ export default function ComparisonPage() {
           </div>
         )}
 
-        {/* Live Execution Log Stream Khusus Komparasi */}
-        <div className="bg-slate-900 rounded-2xl border border-slate-800 p-6 shadow-lg flex flex-col h-56 mb-10">
-          <div className="flex items-center justify-between border-b border-slate-800 pb-3 mb-3">
+        {/* TAB LOG PER-ALGORITMA & STREAM GENERAL (FITUR BARU & LENGKAP!) */}
+        <div className="bg-slate-900 rounded-2xl border border-slate-800 p-6 shadow-lg flex flex-col h-80 mb-10">
+          <div className="flex flex-wrap items-center justify-between border-b border-slate-800 pb-3 mb-3 gap-3">
             <span className="text-xs font-bold text-slate-400 flex items-center gap-2">
               <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse"></span>
-              LIVE COMPARISON EXECUTION LOG STREAM
+              LOG KOMPARASI TERPERINCI PER-ALGORITMA
             </span>
-            <button onClick={() => setLogs(["💬 Terminal log dibersihkan."])} className="text-xs text-slate-500 hover:text-white underline font-mono">
-              Clear Log
-            </button>
+            
+            {/* Navigasi Tab Log */}
+            <div className="flex flex-wrap gap-1.5">
+              <button
+                onClick={() => setActiveLogTab('general')}
+                className={`px-3 py-1 rounded text-xs font-bold transition-all ${
+                  activeLogTab === 'general' ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-400 hover:text-white'
+                }`}
+              >
+                🏁 Log Klasemen Balap
+              </button>
+              {selectedAlgos.map((id) => {
+                const algoObj = allAlgos.find(a => a.id === id);
+                const isSelected = activeLogTab === id;
+                return (
+                  <button
+                    key={id}
+                    onClick={() => setActiveLogTab(id)}
+                    className={`px-3 py-1 rounded text-xs font-bold transition-all ${
+                      isSelected ? 'bg-amber-500 text-slate-950' : 'bg-slate-800 text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    {algoObj?.name || id}
+                  </button>
+                );
+              })}
+            </div>
           </div>
+
           <div ref={terminalRef} className="flex-1 overflow-y-auto font-mono text-xs space-y-1.5 pr-2 scrollbar-thin scrollbar-thumb-slate-700">
-            {logs.map((log, index) => (
-              <div key={index} className={log.includes("🏁") ? "text-emerald-400 font-bold" : log.includes("🏆") ? "text-amber-300 font-extrabold" : log.includes("🚀") ? "text-cyan-400 font-semibold" : "text-slate-300"}>
-                {log}
-              </div>
-            ))}
+            {activeLogTab === 'general' ? (
+              generalLogs.map((log, index) => (
+                <div key={index} className={log.includes("🏁") ? "text-emerald-400 font-bold" : log.includes("🏆") ? "text-amber-300 font-extrabold" : log.includes("🚀") ? "text-cyan-400 font-semibold" : "text-slate-300"}>
+                  {log}
+                </div>
+              ))
+            ) : activeResultObj ? (
+              activeResultObj.detailedLogs.map((logLine, index) => {
+                const isSwap = logLine.includes("[SWAP]");
+                const isSorted = logLine.includes("[SORTED]");
+                const isPivot = logLine.includes("[PIVOT]");
+                return (
+                  <div key={index} className={`p-1.5 rounded bg-slate-950/40 border border-slate-800/50 ${isSwap ? 'text-rose-300' : isSorted ? 'text-emerald-300 font-bold' : isPivot ? 'text-purple-300' : 'text-slate-300'}`}>
+                    {logLine}
+                  </div>
+                );
+              })
+            ) : (
+              <div className="text-slate-500 italic">Jalankan benchmark terlebih dahulu untuk melihat log terperinci algoritma ini.</div>
+            )}
           </div>
         </div>
 
-        {/* Hasil Tabel Benchmark Klasemen */}
+        {/* Tabel Benchmark Klasemen */}
         {results && (
           <div className="space-y-4 animate-fadeIn">
             <h2 className="text-xl font-bold text-slate-900 flex items-center gap-2">
