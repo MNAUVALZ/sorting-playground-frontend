@@ -10,9 +10,8 @@ export default function Navbar() {
 
   const navLinks = [
     { name: 'Beranda', href: '/' },
-    { name: 'Modul', href: '/catalog' },
-    { name: 'Lab IDE Interaktif', href: '/playground' },
-    { name: '⚖️ Perbandingan', href: '/comparison' },
+    { name: 'Modul Teori', href: '/catalog' },
+    { name: 'Lab IDE & Benchmark', href: '/playground' },
   ];
 
   return (
@@ -25,7 +24,6 @@ export default function Navbar() {
           <span>Sort<span className="text-blue-600">Lab</span>.id</span>
         </Link>
 
-        {/* Desktop Menu */}
         <div className="hidden md:flex items-center gap-8 font-semibold text-sm">
           {navLinks.map((link) => {
             const isActive = pathname === link.href;
@@ -41,7 +39,6 @@ export default function Navbar() {
           })}
         </div>
 
-        {/* CTA Button Desktop */}
         <div className="hidden md:flex items-center">
           <Link
             href="/playground"
@@ -51,19 +48,16 @@ export default function Navbar() {
           </Link>
         </div>
 
-        {/* Mobile Hamburger Button */}
         <button
           onClick={() => setIsOpen(!isOpen)}
           className="md:hidden p-2 text-slate-600 hover:text-slate-900 focus:outline-none rounded-lg hover:bg-slate-100"
-          aria-label="Toggle Menu"
         >
           <span className="text-2xl font-bold">{isOpen ? '✕' : '☰'}</span>
         </button>
       </div>
 
-      {/* Mobile Menu Dropdown */}
       {isOpen && (
-        <div className="md:hidden bg-white border-b border-slate-200 px-6 py-4 space-y-3 shadow-lg animate-fadeIn">
+        <div className="md:hidden bg-white border-b border-slate-200 px-6 py-4 space-y-3 shadow-lg">
           {navLinks.map((link) => (
             <Link 
               key={link.href}
@@ -74,15 +68,6 @@ export default function Navbar() {
               {link.name}
             </Link>
           ))}
-          <div className="pt-2 border-t border-slate-100">
-            <Link
-              href="/playground"
-              onClick={() => setIsOpen(false)}
-              className="block w-full py-2.5 bg-blue-600 text-white text-center text-sm font-semibold rounded-xl shadow-md"
-            >
-              Mulai Eksperimen Lab 🚀
-            </Link>
-          </div>
         </div>
       )}
     </nav>

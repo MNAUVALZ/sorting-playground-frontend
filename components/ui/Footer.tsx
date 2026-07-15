@@ -24,9 +24,8 @@ export default function Footer() {
           <h4 className="font-bold text-sm text-slate-200 uppercase tracking-wider mb-4">Navigasi Utama</h4>
           <ul className="space-y-2.5 text-sm text-slate-400">
             <li><Link href="/" className="hover:text-white transition-colors">Beranda</Link></li>
-            <li><Link href="/catalog" className="hover:text-white transition-colors">Katalog Modul</Link></li>
-            <li><Link href="/playground" className="hover:text-white transition-colors">Lab IDE Visualisasi</Link></li>
-            <li><Link href="/comparison" className="hover:text-white transition-colors">Perbandingan Algoritma</Link></li>
+            <li><Link href="/catalog" className="hover:text-white transition-colors">Modul Teori</Link></li>
+            <li><Link href="/playground" className="hover:text-white transition-colors">Lab IDE & Benchmark</Link></li>
           </ul>
         </div>
 
@@ -40,7 +39,7 @@ export default function Footer() {
         </div>
       </div>
       <div className="max-w-6xl mx-auto px-6 pt-8 border-t border-slate-800 text-center text-xs text-slate-500">
-        &copy; {new Date().getFullYear()} SortLab.id • Tugas Struktur Data & Algoritma
+        &copy; 2026 SortLab.id • Tugas Struktur Data & Algoritma
       </div>
     </footer>
   );
