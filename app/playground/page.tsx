@@ -7,7 +7,6 @@ import ArrayBar from '@/components/visualizer/ArrayBar';
 
 interface LogItem {
   id: number;
-  time: string;
   type: 'INFO' | 'PIVOT' | 'COMPARE' | 'SWAP' | 'SORTED' | 'ERROR';
   text: string;
 }
@@ -30,25 +29,44 @@ interface AlgoOption {
   color: string;
 }
 
+interface BenchmarkResult {
+  algo: string;
+  name: string;
+  complexity: string;
+  steps: number;
+  compares: number;
+  swaps: number;
+  timeMs: number;
+  detailedLogs: string[];
+}
+
+interface RaceTrack {
+  id: string;
+  name: string;
+  array: number[];
+  isDone: boolean;
+}
+
 export default function PlaygroundPage() {
   const [labMode, setLabMode] = useState<'single' | 'race'>('single');
 
-  // --- STATE UMUM ---
+  // --- STATE UMUM & KONTROL BARU ---
   const [speedMultiplier, setSpeedMultiplier] = useState<number>(3);
+  const [arraySize, setArraySize] = useState<number>(12); // FITUR BARU: Pengatur Jumlah Balok!
   const [customInput, setCustomInput] = useState<string>("");
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [autoScroll, setAutoScroll] = useState<boolean>(true);
-  const logCounterRef = useRef<number>(2);
+  const logCounterRef = useRef<number>(1);
 
   // --- STATE MODE TUNGGAL ---
-  const [array, setArray] = useState<number[]>([45, 12, 88, 33, 5, 67, 23, 91, 18, 50]);
-  const [initialArray, setInitialArray] = useState<number[]>([45, 12, 88, 33, 5, 67, 23, 91, 18, 50]);
+  const [array, setArray] = useState<number[]>([45, 12, 88, 33, 5, 67, 23, 91, 18, 50, 77, 29]);
+  const [initialArray, setInitialArray] = useState<number[]>([45, 12, 88, 33, 5, 67, 23, 91, 18, 50, 77, 29]);
   const [algorithm, setAlgorithm] = useState<string>('bubble');
   const [allFrames, setAllFrames] = useState<StepFrame[]>([]);
   const [currentFrameIdx, setCurrentFrameIdx] = useState<number>(0);
   const [isSorted, setIsSorted] = useState<boolean>(false);
   const [logs, setLogs] = useState<LogItem[]>([
-    { id: 1, time: new Date().toLocaleTimeString('id-ID'), type: 'INFO', text: "Sistem siap. Pilih algoritma dan tekan Putar Animasi untuk memulai." }
+    { id: 0, type: 'INFO', text: "Sistem siap. Pilih algoritma dan tekan Putar Animasi untuk memulai." }
   ]);
   const terminalRef = useRef<HTMLDivElement>(null);
 
@@ -61,7 +79,7 @@ export default function PlaygroundPage() {
   const [isRaceSorted, setIsRaceSorted] = useState<boolean>(false);
   const [activeLogTab, setActiveLogTab] = useState<string>('general');
   const [generalLogs, setGeneralLogs] = useState<LogItem[]>([
-    { id: 1, time: new Date().toLocaleTimeString('id-ID'), type: 'INFO', text: "Pilih minimal 2 algoritma yang ingin diadu, lalu tekan Putar Komparasi." }
+    { id: 0, type: 'INFO', text: "Pilih minimal 2 algoritma yang ingin diadu, lalu tekan Putar Komparasi." }
   ]);
   const raceTerminalRef = useRef<HTMLDivElement>(null);
 
@@ -72,11 +90,7 @@ export default function PlaygroundPage() {
     { id: 'quick', name: 'Quick Sort', complexity: 'O(n log n)', color: 'bg-purple-600' },
   ];
 
-  // SMART SCROLL: Jika user scroll manual, autoScroll otomatis dimatikan
-  const handleManualScroll = () => {
-    if (autoScroll) setAutoScroll(false);
-  };
-
+  // Efek Scroll Otomatis
   useEffect(() => {
     if (autoScroll && terminalRef.current && labMode === 'single') {
       terminalRef.current.scrollTop = terminalRef.current.scrollHeight;
@@ -91,15 +105,15 @@ export default function PlaygroundPage() {
 
   const addLog = (type: LogItem['type'], text: string) => {
     const newId = logCounterRef.current++;
-    setLogs(prev => [...prev, { id: newId, time: new Date().toLocaleTimeString('id-ID'), type, text }]);
+    setLogs(prev => [...prev, { id: newId, type, text }]);
   };
 
   const addGeneralLog = (type: LogItem['type'], text: string) => {
     const newId = logCounterRef.current++;
-    setGeneralLogs(prev => [...prev, { id: newId, time: new Date().toLocaleTimeString('id-ID'), type, text }]);
+    setGeneralLogs(prev => [...prev, { id: newId, type, text }]);
   };
 
-  // --- MESIN KOMPUTASI SERAGAM (UNTUK TUNGGAL & KOMPARASI) ---
+  // --- MESIN KOMPUTASI SERAGAM ---
   const computeAlgoFrames = (algo: string, startArr: number[]): StepFrame[] => {
     const frames: StepFrame[] = [];
     const arr = [...startArr];
@@ -112,7 +126,7 @@ export default function PlaygroundPage() {
           compares++; stepNum++;
           frames.push({
             array: [...arr], comparing: [j, j + 1], swappedIdx: [],
-            logType: 'COMPARE', logMsg: `Bandingkan elemen [${j}] (${arr[j]}) vs [${j+1}] (${arr[j+1]})`,
+            logType: 'COMPARE', logMsg: `Bandingkan elemen (${arr[j]}) vs (${arr[j+1]})`,
             stepNum, totalCompares: compares, totalSwaps: swaps
           });
           if (arr[j] > arr[j + 1]) {
@@ -120,7 +134,7 @@ export default function PlaygroundPage() {
             swaps++; stepNum++;
             frames.push({
               array: [...arr], comparing: [j, j + 1], swappedIdx: [j, j + 1],
-              logType: 'SWAP', logMsg: `Tukar posisi (${arr[j+1]}) > (${arr[j]}), geser (${arr[j]}) ke kanan`,
+              logType: 'SWAP', logMsg: `Tukar posisi (${arr[j+1]}) dengan (${arr[j]})`,
               stepNum, totalCompares: compares, totalSwaps: swaps
             });
           }
@@ -131,21 +145,21 @@ export default function PlaygroundPage() {
         let minIdx = i; stepNum++;
         frames.push({
           array: [...arr], comparing: [i], swappedIdx: [], logType: 'INFO',
-          logMsg: `Batas indeks [${i}]. Asumsikan minimum sementara (${arr[i]})`,
+          logMsg: `Asumsikan batas kiri (${arr[i]}) adalah minimum sementara`,
           stepNum, totalCompares: compares, totalSwaps: swaps
         });
         for (let j = i + 1; j < n; j++) {
           compares++; stepNum++;
           frames.push({
             array: [...arr], comparing: [minIdx, j], swappedIdx: [], logType: 'COMPARE',
-            logMsg: `Pindai (${arr[j]}) apakah < minimum (${arr[minIdx]})`,
+            logMsg: `Cek apakah (${arr[j]}) < minimum (${arr[minIdx]})`,
             stepNum, totalCompares: compares, totalSwaps: swaps
           });
           if (arr[j] < arr[minIdx]) {
             minIdx = j; stepNum++;
             frames.push({
               array: [...arr], comparing: [minIdx], swappedIdx: [], logType: 'INFO',
-              logMsg: `Minimum baru di indeks [${minIdx}] bernilai (${arr[minIdx]})`,
+              logMsg: `Minimum baru ditemukan: (${arr[minIdx]})`,
               stepNum, totalCompares: compares, totalSwaps: swaps
             });
           }
@@ -155,7 +169,7 @@ export default function PlaygroundPage() {
           swaps++; stepNum++;
           frames.push({
             array: [...arr], comparing: [i, minIdx], swappedIdx: [i, minIdx], logType: 'SWAP',
-            logMsg: `Tukar posisi minimum (${arr[i]}) ke batas kiri [${i}]`,
+            logMsg: `Tukar minimum (${arr[i]}) ke batas kiri`,
             stepNum, totalCompares: compares, totalSwaps: swaps
           });
         }
@@ -165,7 +179,7 @@ export default function PlaygroundPage() {
         let key = arr[i]; let j = i - 1; stepNum++;
         frames.push({
           array: [...arr], comparing: [i], swappedIdx: [], logType: 'INFO',
-          logMsg: `Ambil elemen [${i}] bernilai (${key}) untuk disisipkan ke kiri`,
+          logMsg: `Ambil elemen (${key}) untuk disisipkan ke kiri`,
           stepNum, totalCompares: compares, totalSwaps: swaps
         });
         while (j >= 0 && arr[j] > key) {
@@ -173,7 +187,7 @@ export default function PlaygroundPage() {
           arr[j + 1] = arr[j];
           frames.push({
             array: [...arr], comparing: [j, j + 1], swappedIdx: [j, j + 1], logType: 'SWAP',
-            logMsg: `Geser (${arr[j]}) ke kanan karena > kunci (${key})`,
+            logMsg: `Geser (${arr[j]}) ke kanan karena lebih besar dari kunci`,
             stepNum, totalCompares: compares, totalSwaps: swaps
           });
           j = j - 1;
@@ -182,7 +196,7 @@ export default function PlaygroundPage() {
         arr[j + 1] = key; stepNum++;
         frames.push({
           array: [...arr], comparing: [j + 1], swappedIdx: [], logType: 'INFO',
-          logMsg: `Sisipkan kunci (${key}) di posisi terurut [${j + 1}]`,
+          logMsg: `Sisipkan kunci (${key}) di posisinya`,
           stepNum, totalCompares: compares, totalSwaps: swaps
         });
       }
@@ -192,7 +206,7 @@ export default function PlaygroundPage() {
           let pivot = arr[high]; stepNum++;
           frames.push({
             array: [...arr], comparing: [high], swappedIdx: [], logType: 'PIVOT',
-            logMsg: `Partisi [${low}..${high}] -> Pilih Pivot: (${pivot})`,
+            logMsg: `Partisi wilayah -> Pilih Pivot: (${pivot})`,
             stepNum, totalCompares: compares, totalSwaps: swaps
           });
           let i = low - 1;
@@ -209,7 +223,7 @@ export default function PlaygroundPage() {
                 swaps++; stepNum++;
                 frames.push({
                   array: [...arr], comparing: [i, j], swappedIdx: [i, j], logType: 'SWAP',
-                  logMsg: `Pindahkan (${arr[i]}) ke kiri pivot indeks [${i}]`,
+                  logMsg: `Pindahkan (${arr[i]}) ke wilayah kiri pivot`,
                   stepNum, totalCompares: compares, totalSwaps: swaps
                 });
               }
@@ -220,7 +234,7 @@ export default function PlaygroundPage() {
             swaps++; stepNum++;
             frames.push({
               array: [...arr], comparing: [i + 1, high], swappedIdx: [i + 1, high], logType: 'SWAP',
-              logMsg: `Tempatkan Pivot (${pivot}) ke batas tengah final [${i + 1}]`,
+              logMsg: `Tempatkan Pivot (${pivot}) sebagai batas tengah`,
               stepNum, totalCompares: compares, totalSwaps: swaps
             });
           }
@@ -259,12 +273,12 @@ export default function PlaygroundPage() {
   useEffect(() => {
     let timer: NodeJS.Timeout;
     if (isPlaying && labMode === 'single' && currentFrameIdx < allFrames.length) {
-      const delayMs = Math.max(40, Math.round(800 / speedMultiplier));
+      const delayMs = Math.max(20, Math.round(600 / speedMultiplier));
       timer = setTimeout(() => {
         const nextIdx = currentFrameIdx + 1;
         if (nextIdx >= allFrames.length) {
           setIsPlaying(false); setIsSorted(true); setAutoScroll(false);
-          addLog('SORTED', `Pengurutan selesai sempurna dalam ${allFrames.length} langkah! (Auto-scroll mati)`);
+          addLog('SORTED', `Pengurutan selesai dalam ${allFrames.length} langkah!`);
         } else {
           setCurrentFrameIdx(nextIdx);
           const frame = allFrames[nextIdx];
@@ -276,24 +290,23 @@ export default function PlaygroundPage() {
     return () => clearTimeout(timer);
   }, [isPlaying, currentFrameIdx, allFrames, speedMultiplier, labMode]);
 
-  // --- PEMUTAR OTOMATIS MODE KOMPARASI (SERENTAK!) ---
+  // --- PEMUTAR OTOMATIS MODE KOMPARASI ---
   useEffect(() => {
     let timer: NodeJS.Timeout;
     if (isPlaying && labMode === 'race' && currentRaceIdx < maxRaceFrames) {
-      const delayMs = Math.max(50, Math.round(900 / speedMultiplier));
+      const delayMs = Math.max(20, Math.round(600 / speedMultiplier));
       timer = setTimeout(() => {
         const nextIdx = currentRaceIdx + 1;
         if (nextIdx >= maxRaceFrames) {
           setIsPlaying(false); setIsRaceSorted(true); setAutoScroll(false);
-          addGeneralLog('SORTED', `Seluruh kompetisi algoritma selesai dijalankan! (Auto-scroll mati)`);
+          addGeneralLog('SORTED', `Seluruh kompetisi algoritma selesai!`);
         } else {
           setCurrentRaceIdx(nextIdx);
-          // Cek algoritma yang baru selesai tepat pada frame ini
           selectedAlgos.forEach(id => {
             const f = raceFramesMap[id];
             if (f && nextIdx === f.length - 1) {
               const algoName = allAlgos.find(a => a.id === id)?.name || id;
-              addGeneralLog('SORTED', `[FINISH] ${algoName} menyelesaikan pengurutan (${f[f.length-1].totalSwaps} pertukaran)`);
+              addGeneralLog('SORTED', `[FINISH] ${algoName} selesai!`);
             }
           });
         }
@@ -302,72 +315,76 @@ export default function PlaygroundPage() {
     return () => clearTimeout(timer);
   }, [isPlaying, currentRaceIdx, maxRaceFrames, speedMultiplier, labMode, raceFramesMap, selectedAlgos]);
 
-  // --- KONTROL TOMBOL TUNGGAL ---
+  // --- KONTROL TOMBOL MEDIA ---
   const handlePlayPause = () => {
     if (labMode === 'single') {
       if (isSorted) return;
       setIsPlaying(!isPlaying);
-      if (!isPlaying && currentFrameIdx === 0) { setAutoScroll(true); addLog('INFO', `Memulai simulasi ${algorithm.toUpperCase()}...`); }
+      setAutoScroll(true);
+      if (!isPlaying && currentFrameIdx === 0) addLog('INFO', `Memulai simulasi ${algorithm.toUpperCase()}...`);
     } else {
       if (isRaceSorted) return;
       setIsPlaying(!isPlaying);
-      if (!isPlaying && currentRaceIdx === 0) { setAutoScroll(true); addGeneralLog('INFO', `Memulai komparasi serentak...`); }
+      setAutoScroll(true);
+      if (!isPlaying && currentRaceIdx === 0) addGeneralLog('INFO', `Memulai komparasi serentak...`);
     }
   };
 
   const handleNextStep = () => {
     if (isPlaying) return;
+    setAutoScroll(true);
     if (labMode === 'single') {
       if (isSorted || currentFrameIdx >= allFrames.length - 1) return;
       const nextIdx = currentFrameIdx + 1;
       setCurrentFrameIdx(nextIdx); setArray(allFrames[nextIdx].array);
-      addLog(allFrames[nextIdx].logType, `[STEP] ${allFrames[nextIdx].logMsg}`);
-      if (nextIdx === allFrames.length - 1) { setIsSorted(true); addLog('SORTED', "Pengurutan selesai."); }
+      addLog(allFrames[nextIdx].logType, allFrames[nextIdx].logMsg);
+      if (nextIdx === allFrames.length - 1) { setIsSorted(true); addLog('SORTED', "Selesai."); setAutoScroll(false); }
     } else {
       if (isRaceSorted || currentRaceIdx >= maxRaceFrames - 1) return;
       const nextIdx = currentRaceIdx + 1;
       setCurrentRaceIdx(nextIdx);
-      addGeneralLog('INFO', `[STEP FORWARD] Maju ke langkah serentak #${nextIdx}`);
-      if (nextIdx === maxRaceFrames - 1) { setIsRaceSorted(true); addGeneralLog('SORTED', "Seluruh komparasi selesai."); }
+      if (nextIdx === maxRaceFrames - 1) { setIsRaceSorted(true); addGeneralLog('SORTED', "Selesai."); setAutoScroll(false); }
     }
   };
 
   const handlePrevStep = () => {
     if (isPlaying) return;
+    setAutoScroll(true);
     if (labMode === 'single') {
       if (currentFrameIdx <= 0) return;
       setIsSorted(false);
       const prevIdx = currentFrameIdx - 1;
       setCurrentFrameIdx(prevIdx); setArray(allFrames[prevIdx].array);
-      addLog('INFO', `[PREV] Kembali ke langkah #${allFrames[prevIdx].stepNum}`);
+      addLog('INFO', `Mundur ke langkah #${allFrames[prevIdx].stepNum}`);
     } else {
       if (currentRaceIdx <= 0) return;
       setIsRaceSorted(false);
       const prevIdx = currentRaceIdx - 1;
       setCurrentRaceIdx(prevIdx);
-      addGeneralLog('INFO', `[STEP BACKWARD] Kembali ke langkah serentak #${prevIdx}`);
+      addGeneralLog('INFO', `Mundur ke langkah serentak #${prevIdx}`);
     }
   };
 
   const handleReset = () => {
     setIsPlaying(false);
+    setAutoScroll(true);
     if (labMode === 'single') {
-      setIsSorted(false); setCurrentFrameIdx(0); setArray([...initialArray]); setAutoScroll(true);
-      addLog('INFO', "Simulasi direset ke array awal.");
+      setIsSorted(false); setCurrentFrameIdx(0); setArray([...initialArray]);
+      addLog('INFO', "Simulasi direset.");
     } else {
-      setIsRaceSorted(false); setCurrentRaceIdx(0); setAutoScroll(true);
-      addGeneralLog('INFO', "Komparasi direset ke awal.");
+      setIsRaceSorted(false); setCurrentRaceIdx(0);
+      addGeneralLog('INFO', "Komparasi direset.");
     }
   };
 
+  // --- PENGATUR ARRAY (ACAK & SLIDER SIZE) ---
   const generateRandom = () => {
     if (isPlaying) return;
+    const newArr = Array.from({ length: arraySize }, () => Math.floor(Math.random() * 95) + 5);
     if (labMode === 'single') {
-      const newArr = Array.from({ length: 10 }, () => Math.floor(Math.random() * 95) + 5);
-      setInitialArray(newArr); addLog('INFO', `Array baru diacak: [${newArr.join(', ')}]`);
+      setInitialArray(newArr); addLog('INFO', `Diacak ulang (${arraySize} balok)`);
     } else {
-      const newArr = Array.from({ length: 15 }, () => Math.floor(Math.random() * 95) + 5);
-      setRaceArray(newArr); addGeneralLog('INFO', `Deret komparasi baru diacak: [${newArr.join(', ')}]`);
+      setRaceArray(newArr); addGeneralLog('INFO', `Diacak ulang (${arraySize} balok)`);
     }
   };
 
@@ -377,25 +394,30 @@ export default function PlaygroundPage() {
     const parsed = customInput.split(',').map(s => parseInt(s.trim(), 10)).filter(n => !isNaN(n) && n > 0 && n <= 500);
     if (parsed.length < 3) { alert("Minimal 3 angka valid berpemisah koma."); return; }
     if (labMode === 'single') {
-      setInitialArray(parsed); setCustomInput(""); addLog('INFO', `Deret custom diset: [${parsed.join(', ')}]`);
+      setInitialArray(parsed); setArraySize(parsed.length); setCustomInput(""); addLog('INFO', `Deret custom diset!`);
     } else {
-      setRaceArray(parsed); setCustomInput(""); addGeneralLog('INFO', `Deret komparasi custom diset: [${parsed.join(', ')}]`);
+      setRaceArray(parsed); setArraySize(parsed.length); setCustomInput(""); addGeneralLog('INFO', `Deret komparasi custom diset!`);
     }
   };
 
   const toggleAlgoSelection = (id: string) => {
     if (isPlaying) return;
     if (selectedAlgos.includes(id)) {
-      if (selectedAlgos.length <= 2) { alert("Pilih minimal 2 algoritma untuk dibandingkan."); return; }
+      if (selectedAlgos.length <= 2) { alert("Pilih minimal 2 algoritma."); return; }
       setSelectedAlgos(selectedAlgos.filter(item => item !== id));
     } else { setSelectedAlgos([...selectedAlgos, id]); }
   };
+
+  // Efek merespons perubahan slider size
+  useEffect(() => {
+    if (!isPlaying) generateRandom();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [arraySize]); 
 
   const currentFrame = allFrames[currentFrameIdx] || { comparing: [], swappedIdx: [], totalCompares: 0, totalSwaps: 0, stepNum: 0 };
   const maxVal = Math.max(...array, 100);
   const maxRaceVal = Math.max(...raceArray, 100);
 
-  // Hasil Klasemen Komparasi
   const raceLeaderboard = selectedAlgos.map(id => {
     const f = raceFramesMap[id] || [];
     const lastF = f[f.length - 1] || { totalCompares: 0, totalSwaps: 0 };
@@ -403,15 +425,37 @@ export default function PlaygroundPage() {
     return { id, name: algoObj.name, complexity: algoObj.complexity, steps: f.length, compares: lastF.totalCompares, swaps: lastF.totalSwaps };
   }).sort((a, b) => (a.swaps + a.steps) - (b.swaps + b.steps));
 
+  // Komponen Helper untuk Log Render
+  const renderLogItem = (log: LogItem) => {
+    let badgeColor = "bg-slate-800 text-slate-300 border-slate-700";
+    let label = "INFO";
+    if (log.type === 'PIVOT') { badgeColor = "bg-purple-900/60 text-purple-300 border-purple-700"; label = "PIVOT"; }
+    else if (log.type === 'COMPARE') { badgeColor = "bg-amber-900/60 text-amber-300 border-amber-700"; label = "COMPARE"; }
+    else if (log.type === 'SWAP') { badgeColor = "bg-rose-900/60 text-rose-300 border-rose-700 font-bold"; label = "SWAP"; }
+    else if (log.type === 'SORTED') { badgeColor = "bg-emerald-900/60 text-emerald-300 border-emerald-700 font-bold"; label = "SORTED"; }
+    else if (log.type === 'ERROR') { badgeColor = "bg-red-950 text-red-400 border-red-800 font-bold"; label = "ERROR"; }
+
+    return (
+      <div key={log.id} className="flex items-start gap-2.5 leading-relaxed p-1.5 hover:bg-slate-800/30 rounded border border-transparent transition-colors">
+        <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold border shrink-0 text-center min-w-[65px] ${badgeColor}`}>
+          {label}
+        </span>
+        <span className={log.type === 'SWAP' ? "text-rose-200 font-medium text-xs" : log.type === 'SORTED' ? "text-emerald-300 font-bold text-xs" : log.type === 'PIVOT' ? "text-purple-200 font-medium text-xs" : "text-slate-300 text-xs"}>
+          {log.text}
+        </span>
+      </div>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col justify-between">
       <Navbar />
 
-      {/* TAB SWITCHER SIMULATOR */}
-      <div className="bg-slate-900 text-white py-3.5 px-6 border-b border-slate-800">
+      {/* HEADER TABS MODE */}
+      <div className="bg-slate-900 text-white py-3 px-6 border-b border-slate-800 shadow-md">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="font-extrabold text-sm tracking-wide text-slate-200">
-            PILIH MODE SIMULATOR:
+          <div className="font-extrabold text-sm tracking-wide text-slate-200 uppercase">
+            Pilih Mode Simulator
           </div>
           <div className="flex bg-slate-800 p-1 rounded-xl border border-slate-700">
             <button
@@ -420,360 +464,198 @@ export default function PlaygroundPage() {
                 labMode === 'single' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:text-white'
               }`}
             >
-              Mode Visualisasi Tunggal
+              Visualisasi Tunggal
             </button>
             <button
               onClick={() => { setLabMode('race'); setIsPlaying(false); setAutoScroll(true); }}
               className={`px-5 py-2 rounded-lg font-bold text-xs sm:text-sm transition-all ${
-                labMode === 'race' ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:text-white'
+                labMode === 'race' ? 'bg-amber-500 text-slate-950 shadow-md' : 'text-slate-400 hover:text-white'
               }`}
             >
-              Mode Komparasi Serentak
+              Komparasi Serentak
             </button>
           </div>
         </div>
       </div>
 
-      {/* TOOLBAR KONTROL UMUM (BERLAKU UNTUK TUNGGAL & KOMPARASI) */}
-      <div className="bg-white border-b border-slate-200 px-6 py-4 shadow-sm">
-        <div className="max-w-6xl mx-auto flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-          {/* Bagian Kiri: Tombol Algoritma di Mode Tunggal atau Filter di Mode Komparasi */}
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs font-bold text-slate-500 uppercase mr-2">Algoritma:</span>
-            {labMode === 'single' ? (
-              allAlgos.map((algo) => {
-                const isActive = algorithm === algo.id;
-                return (
-                  <button
-                    key={algo.id} onClick={() => setAlgorithm(algo.id)} disabled={isPlaying}
-                    className={`px-3.5 py-1.5 rounded-lg font-bold text-xs transition-all border ${
-                      isActive ? 'bg-slate-900 text-white border-slate-900 shadow-sm' : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'
-                    }`}
-                  >
-                    {algo.name}
-                  </button>
-                );
-              })
-            ) : (
-              allAlgos.map((algo) => {
-                const isChecked = selectedAlgos.includes(algo.id);
-                return (
-                  <button
-                    key={algo.id} onClick={() => toggleAlgoSelection(algo.id)} disabled={isPlaying}
-                    className={`px-3 py-1 rounded-lg font-bold text-xs transition-all border flex items-center gap-1.5 ${
-                      isChecked ? 'bg-blue-50 text-blue-700 border-blue-300 font-extrabold' : 'bg-slate-50 text-slate-400 border-slate-200 hover:bg-slate-100'
-                    }`}
-                  >
-                    <span className={`w-2 h-2 rounded-full ${isChecked ? 'bg-blue-600' : 'bg-slate-300'}`}></span>
-                    <span>{algo.name}</span>
-                  </button>
-                );
-              })
-            )}
-          </div>
-
-          {/* Bagian Kanan: Speed & Acak */}
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 bg-slate-50 border border-slate-300 px-3 py-1.5 rounded-xl">
-              <span className="text-xs font-bold text-slate-500">Tempo:</span>
-              <input
-                type="range" min="1" max="10" step="1" value={speedMultiplier}
-                onChange={(e) => setSpeedMultiplier(Number(e.target.value))}
-                className="w-20 accent-blue-600 cursor-pointer"
-              />
-              <span className="text-xs font-mono font-extrabold text-blue-600 w-8 text-right">{speedMultiplier}x</span>
-            </div>
-
-            <button
-              onClick={generateRandom} disabled={isPlaying}
-              className="px-4 py-1.5 bg-white border border-slate-300 text-slate-800 hover:bg-slate-50 font-bold text-xs rounded-xl shadow-sm transition-all"
-            >
-              Acak Baru
-            </button>
-          </div>
-        </div>
-
-        {/* Panel Tombol Pemutar Animasi (LENGKAP DI KEDUA MODE!) */}
-        <div className="max-w-6xl mx-auto mt-4 pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <button
-              onClick={handlePrevStep} disabled={isPlaying || (labMode === 'single' ? currentFrameIdx <= 0 : currentRaceIdx <= 0)}
-              className="px-4 py-2 bg-white border border-slate-300 hover:bg-slate-50 text-slate-800 font-bold text-xs rounded-xl shadow-sm disabled:opacity-40 transition-all"
-            >
-              Sebelumnya
-            </button>
-
-            <button
-              onClick={handlePlayPause} disabled={labMode === 'single' ? isSorted : isRaceSorted}
-              className={`px-6 py-2 font-extrabold text-xs rounded-xl shadow-md transition-all ${
-                isPlaying ? 'bg-amber-500 hover:bg-amber-600 text-slate-950' : 'bg-blue-600 hover:bg-blue-700 text-white'
-              } disabled:opacity-50`}
-            >
-              {isPlaying ? 'Jeda Animasi' : 'Putar Animasi'}
-            </button>
-
-            <button
-              onClick={handleNextStep} disabled={isPlaying || (labMode === 'single' ? isSorted || currentFrameIdx >= allFrames.length - 1 : isRaceSorted || currentRaceIdx >= maxRaceFrames - 1)}
-              className="px-4 py-2 bg-white border border-slate-300 hover:bg-slate-50 text-slate-800 font-bold text-xs rounded-xl shadow-sm disabled:opacity-40 transition-all"
-            >
-              Selanjutnya
-            </button>
-
-            <button
-              onClick={handleReset}
-              className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl ml-2"
-            >
-              Reset
-            </button>
-          </div>
-
-          <form onSubmit={handleApplyCustom} className="flex items-center gap-2">
-            <input
-              type="text" placeholder="Uji deret custom: 15, 3, 88, 12" value={customInput}
-              onChange={(e) => setCustomInput(e.target.value)} disabled={isPlaying}
-              className="bg-slate-50 border border-slate-300 rounded-xl px-3 py-1.5 text-xs font-mono w-48 sm:w-60 text-slate-900 outline-none focus:ring-2 focus:ring-blue-600 disabled:opacity-50"
-            />
-            <button type="submit" disabled={isPlaying || !customInput.trim()} className="px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white font-semibold rounded-xl text-xs disabled:opacity-40 shadow-sm whitespace-nowrap">
-              Set Data
-            </button>
-          </form>
-        </div>
-      </div>
-
-      {/* ========================================================================= */}
-      {/* RUANG KERJA MODE 1: VISUALISASI TUNGGAL */}
-      {/* ========================================================================= */}
-      {labMode === 'single' && (
-        <main className="max-w-6xl mx-auto w-full px-6 py-8 flex-1 grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-          <div className="lg:col-span-2 flex flex-col gap-4">
-            <div className="grid grid-cols-3 gap-3">
-              <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm text-center">
-                <span className="text-[11px] font-bold text-slate-400 uppercase block">Progres Langkah</span>
-                <span className="text-xl font-mono font-extrabold text-slate-900">{currentFrame.stepNum} <span className="text-xs font-normal text-slate-400">/ {allFrames.length}</span></span>
-              </div>
-              <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm text-center">
-                <span className="text-[11px] font-bold text-amber-500 uppercase block">Perbandingan</span>
-                <span className="text-xl font-mono font-extrabold text-amber-600">{currentFrame.totalCompares}</span>
-              </div>
-              <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-sm text-center">
-                <span className="text-[11px] font-bold text-rose-500 uppercase block">Pertukaran (Swap)</span>
-                <span className="text-xl font-mono font-extrabold text-rose-600">{currentFrame.totalSwaps}</span>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-2xl border border-slate-200 p-6 md:p-8 shadow-sm flex flex-col justify-between h-[520px]">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
-                <div className="flex flex-wrap items-center gap-3 text-[11px] font-bold text-slate-600">
-                  <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-blue-600 inline-block"></span> Belum Terurut</span>
-                  <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-amber-400 inline-block"></span> Dibandingkan</span>
-                  <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-rose-500 inline-block"></span> Tukar Posisi (Swap)</span>
-                  <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block"></span> Terurut</span>
-                </div>
-                <div className="text-xs font-mono font-semibold text-slate-400">Total: {array.length}</div>
-              </div>
-
-              <div className="flex items-end justify-center gap-2.5 flex-1 px-4 h-full">
-                {array.map((val, idx) => (
-                  <ArrayBar
-                    key={idx} value={val} maxValue={maxVal}
-                    isComparing={currentFrame.comparing.includes(idx)} 
-                    isSwapped={currentFrame.swappedIdx.includes(idx)} 
-                    isSorted={isSorted}
-                  />
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Terminal Log Tunggal Tinggi 610px & Bisa Di-scroll Bebas di Layar! */}
-          <div 
-            onWheel={handleManualScroll} onTouchMove={handleManualScroll}
-            className="lg:col-span-1 bg-slate-900 rounded-2xl border border-slate-800 p-5 shadow-lg flex flex-col h-[610px]"
-          >
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3 mb-3">
-              <span className="text-xs font-bold text-slate-300 flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                RIWAYAT LOG EKSEKUSI
-              </span>
-              <button onClick={() => setLogs([{ id: Date.now(), time: new Date().toLocaleTimeString('id-ID'), type: 'INFO', text: "Log dibersihkan." }])} className="text-xs text-slate-400 hover:text-white underline font-mono">
-                Clear
-              </button>
-            </div>
-            
-            <div className="text-[11px] font-mono text-slate-400 pb-2 border-b border-slate-800/60 mb-2 flex justify-between items-center">
-              <span>Total: <strong className="text-white">{logs.length}</strong> baris</span>
-              <button onClick={() => setAutoScroll(!autoScroll)} className={`px-2 py-0.5 rounded text-[10px] font-bold ${autoScroll ? 'bg-blue-900/60 text-blue-300 border border-blue-600' : 'bg-slate-800 text-slate-400'}`}>
-                Auto-scroll: {autoScroll ? 'ON' : 'OFF'}
-              </button>
-            </div>
-
-            <div ref={terminalRef} className="flex-1 overflow-y-auto font-mono text-xs space-y-2 pr-2 scrollbar-thin scrollbar-thumb-slate-700">
-              {logs.map((log) => {
-                let badgeColor = "bg-slate-800 text-slate-300 border-slate-700";
-                let label = "INFO";
-                if (log.type === 'PIVOT') { badgeColor = "bg-purple-900/60 text-purple-300 border-purple-700"; label = "PIVOT"; }
-                else if (log.type === 'COMPARE') { badgeColor = "bg-amber-900/60 text-amber-300 border-amber-700"; label = "COMPARE"; }
-                else if (log.type === 'SWAP') { badgeColor = "bg-rose-900/60 text-rose-300 border-rose-700 font-bold"; label = "SWAP"; }
-                else if (log.type === 'SORTED') { badgeColor = "bg-emerald-900/60 text-emerald-300 border-emerald-700 font-bold"; label = "SORTED"; }
-                else if (log.type === 'ERROR') { badgeColor = "bg-red-950 text-red-400 border-red-800 font-bold"; label = "ERROR"; }
-
-                return (
-                  <div key={log.id} className="flex items-start gap-2 leading-relaxed bg-slate-950/50 p-2 rounded-lg border border-slate-800/60 hover:border-slate-700 transition-colors">
-                    <span className="text-slate-500 shrink-0 text-[11px]">[{log.time}]</span>
-                    <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold border shrink-0 text-center min-w-[65px] ${badgeColor}`}>
-                      {label}
-                    </span>
-                    <span className={log.type === 'SWAP' ? "text-rose-200 font-semibold text-xs" : log.type === 'SORTED' ? "text-emerald-300 font-bold text-xs" : log.type === 'PIVOT' ? "text-purple-200 font-semibold text-xs" : "text-slate-300 text-xs"}>
-                      {log.text}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </main>
-      )}
-
-      {/* ========================================================================= */}
-      {/* RUANG KERJA MODE 2: KOMPARASI SERENTAK (SIDE-BY-SIDE DENGAN LOG SERAGAM!) */}
-      {/* ========================================================================= */}
-      {labMode === 'race' && (
-        <main className="max-w-6xl mx-auto w-full px-6 py-8 flex-1 grid grid-cols-1 lg:grid-cols-3 gap-6 items-start animate-fadeIn">
-          {/* KOLOM KIRI: Racing Grid Arena */}
-          <div className="lg:col-span-2 flex flex-col gap-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {selectedAlgos.map((id) => {
-                const algoObj = allAlgos.find(a => a.id === id)!;
-                const frames = raceFramesMap[id] || [];
-                const safeIdx = Math.min(currentRaceIdx, Math.max(0, frames.length - 1));
-                const activeFrame = frames[safeIdx] || { array: raceArray, totalSwaps: 0 };
-                const isTrackDone = isRaceSorted || (frames.length > 0 && currentRaceIdx >= frames.length - 1);
-
-                return (
-                  <div key={id} className="bg-white p-4.5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between h-52">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="font-extrabold text-sm text-slate-900 flex items-center gap-2">
-                        <span className={`w-2.5 h-2.5 rounded-full ${isTrackDone ? 'bg-emerald-500' : 'bg-blue-600 animate-pulse'}`}></span>
-                        {algoObj.name}
-                      </span>
-                      <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${isTrackDone ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-600'}`}>
-                        {isTrackDone ? `Selesai (${activeFrame.totalSwaps} swap)` : `Langkah #${safeIdx}`}
-                      </span>
-                    </div>
-
-                    <div className="flex items-end justify-center gap-1 flex-1 bg-slate-50 p-2.5 rounded-xl border border-slate-100 overflow-hidden">
-                      {activeFrame.array.map((val, idx) => {
-                        const heightPct = Math.max(15, Math.round((val / maxRaceVal) * 100));
-                        return <div key={idx} style={{ height: `${heightPct}%` }} className={`flex-1 rounded-t transition-all duration-200 ${isTrackDone ? 'bg-emerald-500 shadow-sm' : algoObj.color}`} />;
-                      })}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Tabel Klasemen Akhir */}
-            <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
-              <h3 className="font-extrabold text-sm text-slate-900 uppercase tracking-wider mb-4">Klasemen Efisiensi Pengurutan</h3>
-              <div className="overflow-x-auto">
-                <table className="w-full text-left border-collapse text-xs">
-                  <thead>
-                    <tr className="bg-slate-50 border-b border-slate-200 font-bold text-slate-500 uppercase">
-                      <th className="py-3 px-4">Peringkat & Algoritma</th>
-                      <th className="py-3 px-4">Kompleksitas</th>
-                      <th className="py-3 px-4">Total Langkah</th>
-                      <th className="py-3 px-4">Pertukaran (Swap)</th>
-                      <th className="py-3 px-4">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 font-semibold text-slate-700">
-                    {raceLeaderboard.map((res, index) => (
-                      <tr key={res.id} className={index === 0 ? "bg-blue-50/40" : ""}>
-                        <td className="py-3 px-4 font-bold text-slate-900 flex items-center gap-2">
-                          <span className={`w-5 h-5 rounded-full flex items-center justify-center text-[10px] ${index === 0 ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-600'}`}>{index + 1}</span>
-                          {res.name}
-                        </td>
-                        <td className="py-3 px-4 font-mono text-slate-500">{res.complexity}</td>
-                        <td className="py-3 px-4 font-mono">{res.steps}</td>
-                        <td className="py-3 px-4 font-mono text-rose-600 font-bold">{res.swaps} kali</td>
-                        <td className="py-3 px-4">
-                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${index === 0 ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-600'}`}>
-                            {index === 0 ? 'Terbaik' : 'Standar'}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-
-          {/* KOLOM KANAN: Terminal Log Komparasi Seragam dengan Mode Tunggal! */}
-          <div 
-            onWheel={handleManualScroll} onTouchMove={handleManualScroll}
-            className="lg:col-span-1 bg-slate-900 rounded-2xl border border-slate-800 p-5 shadow-lg flex flex-col h-[610px]"
-          >
-            <div className="flex flex-wrap items-center justify-between border-b border-slate-800 pb-3 mb-3 gap-2">
-              <span className="text-xs font-bold text-slate-300 flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
-                LOG KOMPARASI SERENTAK
-              </span>
-              <div className="flex flex-wrap gap-1">
-                <button onClick={() => setActiveLogTab('general')} className={`px-2.5 py-1 rounded text-[11px] font-bold transition-all ${activeLogTab === 'general' ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-400'}`}>
-                  Umum
-                </button>
-                {selectedAlgos.map((id) => {
-                  const algoObj = allAlgos.find(a => a.id === id);
+      <main className="max-w-6xl mx-auto w-full px-6 py-8 flex-1 grid grid-cols-1 xl:grid-cols-3 gap-6 items-start">
+        {/* KOLOM KIRI (STUDIO DASHBOARD) */}
+        <div className="xl:col-span-2 flex flex-col gap-4">
+          
+          {/* TOOLBAR ATAS: FILE TABS & SETTINGS */}
+          <div className="bg-white rounded-t-2xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className="flex flex-wrap items-center bg-slate-100 border-b border-slate-200 px-2 pt-2 gap-1">
+              {labMode === 'single' ? (
+                allAlgos.map((algo) => {
+                  const isActive = algorithm === algo.id;
                   return (
-                    <button key={id} onClick={() => setActiveLogTab(id)} className={`px-2.5 py-1 rounded text-[11px] font-bold transition-all ${activeLogTab === id ? 'bg-amber-500 text-slate-950 font-extrabold' : 'bg-slate-800 text-slate-400'}`}>
-                      {algoObj?.name.replace(' Sort', '')}
+                    <button
+                      key={algo.id} onClick={() => setAlgorithm(algo.id)} disabled={isPlaying}
+                      className={`px-4 py-2.5 rounded-t-xl font-bold text-xs transition-all border-t border-x ${
+                        isActive ? 'bg-white text-blue-700 border-slate-200 relative top-[1px]' : 'bg-transparent text-slate-500 border-transparent hover:bg-slate-200'
+                      }`}
+                    >
+                      {algo.name}
                     </button>
                   );
-                })}
-              </div>
-            </div>
-
-            <div className="text-[11px] font-mono text-slate-400 pb-2 border-b border-slate-800/60 mb-2 flex justify-between items-center">
-              <span>Filter: <strong className="text-white uppercase">{activeLogTab}</strong></span>
-              <button onClick={() => setAutoScroll(!autoScroll)} className={`px-2 py-0.5 rounded text-[10px] font-bold ${autoScroll ? 'bg-blue-900/60 text-blue-300 border border-blue-600' : 'bg-slate-800 text-slate-400'}`}>
-                Auto-scroll: {autoScroll ? 'ON' : 'OFF'}
-              </button>
-            </div>
-
-            <div ref={raceTerminalRef} className="flex-1 overflow-y-auto font-mono text-xs space-y-2 pr-2 scrollbar-thin scrollbar-thumb-slate-700">
-              {activeLogTab === 'general' ? (
-                generalLogs.map((log) => (
-                  <div key={log.id} className="flex items-start gap-2 leading-relaxed bg-slate-950/50 p-2 rounded-lg border border-slate-800/60">
-                    <span className="text-slate-500 shrink-0 text-[11px]">[{log.time}]</span>
-                    <span className="text-slate-300 text-xs">{log.text}</span>
-                  </div>
-                ))
+                })
               ) : (
-                (raceFramesMap[activeLogTab] || []).slice(0, currentRaceIdx + 1).map((f, idx) => {
-                  let badgeColor = "bg-slate-800 text-slate-300 border-slate-700";
-                  let label = "INFO";
-                  if (f.logType === 'PIVOT') { badgeColor = "bg-purple-900/60 text-purple-300 border-purple-700"; label = "PIVOT"; }
-                  else if (f.logType === 'COMPARE') { badgeColor = "bg-amber-900/60 text-amber-300 border-amber-700"; label = "COMPARE"; }
-                  else if (f.logType === 'SWAP') { badgeColor = "bg-rose-900/60 text-rose-300 border-rose-700 font-bold"; label = "SWAP"; }
-
+                allAlgos.map((algo) => {
+                  const isChecked = selectedAlgos.includes(algo.id);
                   return (
-                    <div key={idx} className="flex items-start gap-2 leading-relaxed bg-slate-950/50 p-2 rounded-lg border border-slate-800/60">
-                      <span className="text-slate-500 shrink-0 text-[11px]">#{idx+1}</span>
-                      <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold border shrink-0 text-center min-w-[65px] ${badgeColor}`}>
-                        {label}
-                      </span>
-                      <span className={f.logType === 'SWAP' ? "text-rose-200 font-semibold text-xs" : "text-slate-300 text-xs"}>
-                        {f.logMsg}
-                      </span>
-                    </div>
+                    <button
+                      key={algo.id} onClick={() => toggleAlgoSelection(algo.id)} disabled={isPlaying}
+                      className={`px-4 py-2 rounded-t-xl font-bold text-xs transition-all border-t border-x flex items-center gap-1.5 ${
+                        isChecked ? 'bg-white text-slate-900 border-slate-200 relative top-[1px]' : 'bg-transparent text-slate-400 border-transparent hover:bg-slate-200'
+                      }`}
+                    >
+                      <span className={`w-2 h-2 rounded-full ${isChecked ? 'bg-blue-600' : 'bg-slate-300'}`}></span>
+                      {algo.name}
+                    </button>
                   );
                 })
               )}
             </div>
+
+            <div className="p-4 flex flex-wrap items-center justify-between gap-4">
+              <div className="flex items-center gap-4 w-full sm:w-auto">
+                <div className="flex flex-col gap-1 w-32">
+                  <span className="text-[10px] font-bold text-slate-500 uppercase">Jumlah Data: {arraySize}</span>
+                  <input type="range" min="5" max="40" step="1" value={arraySize} onChange={(e) => setArraySize(Number(e.target.value))} disabled={isPlaying} className="accent-blue-600 cursor-pointer" />
+                </div>
+                <div className="flex flex-col gap-1 w-32">
+                  <span className="text-[10px] font-bold text-slate-500 uppercase">Kecepatan: {speedMultiplier}x</span>
+                  <input type="range" min="1" max="10" step="1" value={speedMultiplier} onChange={(e) => setSpeedMultiplier(Number(e.target.value))} className="accent-emerald-500 cursor-pointer" />
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button onClick={generateRandom} disabled={isPlaying} className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-lg transition-all">Acak Baru</button>
+                <form onSubmit={handleApplyCustom} className="flex items-center gap-2">
+                  <input type="text" placeholder="Data manual..." value={customInput} onChange={(e) => setCustomInput(e.target.value)} disabled={isPlaying} className="bg-slate-50 border border-slate-300 rounded-lg px-3 py-1.5 text-xs font-mono w-32 outline-none focus:border-blue-500 disabled:opacity-50" />
+                  <button type="submit" disabled={isPlaying} className="px-3 py-1.5 bg-slate-800 text-white font-bold text-xs rounded-lg">Set</button>
+                </form>
+              </div>
+            </div>
           </div>
-        </main>
-      )}
+
+          {/* KANVAS ANIMASI */}
+          <div className="bg-white rounded-b-2xl border border-slate-200 border-t-0 p-6 shadow-sm flex flex-col justify-between h-[420px]">
+            {labMode === 'single' ? (
+              <div className="flex items-end justify-center gap-1.5 flex-1 px-2 h-full w-full">
+                {array.map((val, idx) => {
+                  const ht = Math.max(5, Math.round((val / maxVal) * 100));
+                  return <div key={idx} style={{ height: `${ht}%` }} className={`flex-1 rounded-t transition-all duration-150 ${isSorted ? 'bg-emerald-500' : currentFrame.swappedIdx.includes(idx) ? 'bg-rose-500' : currentFrame.comparing.includes(idx) ? 'bg-amber-400' : 'bg-blue-600'}`} />
+                })}
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-4 h-full">
+                {selectedAlgos.map(id => {
+                  const algo = allAlgos.find(a=>a.id===id)!;
+                  const frames = raceFramesMap[id] || [];
+                  const safeIdx = Math.min(currentRaceIdx, Math.max(0, frames.length - 1));
+                  const activeFrame = frames[safeIdx] || { array: raceArray };
+                  const isDone = isRaceSorted || (frames.length > 0 && currentRaceIdx >= frames.length - 1);
+                  return (
+                    <div key={id} className="bg-slate-50 rounded-xl border border-slate-100 p-3 flex flex-col">
+                      <span className="text-[10px] font-bold text-slate-500 uppercase mb-2 flex justify-between">
+                        <span>{algo.name}</span>
+                        {isDone && <span className="text-emerald-600">Selesai</span>}
+                      </span>
+                      <div className="flex items-end gap-0.5 flex-1 w-full">
+                        {activeFrame.array.map((v, i) => {
+                          const h = Math.max(5, Math.round((v / maxRaceVal) * 100));
+                          return <div key={i} style={{ height: `${h}%` }} className={`flex-1 rounded-t transition-all ${isDone ? 'bg-emerald-400' : algo.color}`} />
+                        })}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+
+            {/* LIVE STATUS SUBTITLE (FITUR BARU) */}
+            <div className="mt-6 text-center h-8">
+              {labMode === 'single' ? (
+                <span className={`text-sm font-bold px-4 py-2 rounded-full border ${isSorted ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : currentFrame.swappedIdx.length > 0 ? 'bg-rose-50 text-rose-700 border-rose-200' : currentFrame.comparing.length > 0 ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-slate-100 text-slate-600 border-slate-200'}`}>
+                  {isSorted ? "Pengurutan Selesai!" : currentFrame.logMsg || "Siap dijalankan."}
+                </span>
+              ) : (
+                <span className="text-sm font-bold text-slate-600 bg-slate-100 px-4 py-2 rounded-full border border-slate-200">
+                  {isRaceSorted ? "Komparasi Selesai!" : isPlaying ? "Mesin Komparasi Berjalan..." : "Siap dijalankan."}
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* MEDIA PLAYER KONTROL BAWAH */}
+          <div className="bg-slate-900 rounded-2xl p-4 flex items-center justify-between shadow-lg text-white">
+            <div className="flex items-center gap-4">
+              <button onClick={handlePrevStep} disabled={isPlaying || (labMode==='single' ? currentFrameIdx<=0 : currentRaceIdx<=0)} className="w-10 h-10 flex items-center justify-center rounded-full bg-slate-800 hover:bg-slate-700 disabled:opacity-50 transition-colors">
+                ⏮
+              </button>
+              <button onClick={handlePlayPause} disabled={labMode==='single' ? isSorted : isRaceSorted} className={`w-14 h-14 flex items-center justify-center rounded-full text-xl shadow-lg transition-transform hover:scale-105 ${isPlaying ? 'bg-amber-500 text-slate-900' : 'bg-blue-600 text-white'}`}>
+                {isPlaying ? '⏸' : '▶'}
+              </button>
+              <button onClick={handleNextStep} disabled={isPlaying || (labMode==='single' ? isSorted||currentFrameIdx>=allFrames.length-1 : isRaceSorted||currentRaceIdx>=maxRaceFrames-1)} className="w-10 h-10 flex items-center justify-center rounded-full bg-slate-800 hover:bg-slate-700 disabled:opacity-50 transition-colors">
+                ⏭
+              </button>
+              <button onClick={handleReset} className="ml-4 px-4 py-2 rounded-lg bg-slate-800 hover:bg-rose-900/50 text-slate-300 hover:text-rose-400 font-bold text-xs transition-colors">
+                Reset Ulang
+              </button>
+            </div>
+            {/* Telemetri Singkat */}
+            <div className="hidden sm:flex items-center gap-6 pr-4 font-mono text-xs">
+              <div className="flex flex-col text-right">
+                <span className="text-slate-500">Langkah</span>
+                <span className="font-bold text-blue-400">{labMode==='single' ? currentFrame.stepNum : currentRaceIdx}</span>
+              </div>
+              {labMode === 'single' && (
+                <>
+                  <div className="flex flex-col text-right">
+                    <span className="text-slate-500">Compare</span>
+                    <span className="font-bold text-amber-400">{currentFrame.totalCompares}</span>
+                  </div>
+                  <div className="flex flex-col text-right">
+                    <span className="text-slate-500">Swap</span>
+                    <span className="font-bold text-rose-400">{currentFrame.totalSwaps}</span>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* KOLOM KANAN: TERMINAL LOG BEBAS SCROLL */}
+        <div className="xl:col-span-1 bg-[#0d1117] rounded-2xl border border-slate-800 p-5 shadow-xl flex flex-col h-[650px]">
+          <div className="flex items-center justify-between border-b border-slate-800 pb-3 mb-3">
+            <span className="text-xs font-bold text-slate-300 flex items-center gap-2 tracking-widest uppercase">
+              <span className={`w-2 h-2 rounded-full ${isPlaying ? 'bg-emerald-500 animate-pulse' : 'bg-slate-600'}`}></span>
+              Execution Log
+            </span>
+            <button onClick={() => { labMode==='single'?setLogs([]):setGeneralLogs([]) }} className="text-xs text-slate-500 hover:text-white transition-colors font-mono">
+              Clear
+            </button>
+          </div>
+          
+          <div className="text-[10px] font-mono text-slate-500 pb-2 border-b border-slate-800/50 mb-3 flex justify-between items-center">
+            <span>Auto-Scroll: <button onClick={()=>setAutoScroll(!autoScroll)} className={`ml-1 font-bold ${autoScroll ? 'text-blue-400' : 'text-slate-400'}`}>{autoScroll ? 'ON' : 'OFF'}</button></span>
+            <span className="italic">Scroll layar untuk mematikan</span>
+          </div>
+
+          <div 
+            ref={labMode === 'single' ? terminalRef : raceTerminalRef}
+            onWheel={() => setAutoScroll(false)} onTouchMove={() => setAutoScroll(false)}
+            className="flex-1 overflow-y-auto font-mono space-y-1 pr-2 scrollbar-thin scrollbar-thumb-slate-700"
+          >
+            {labMode === 'single' ? (
+              logs.map(renderLogItem)
+            ) : (
+              generalLogs.map(renderLogItem)
+            )}
+          </div>
+        </div>
+      </main>
 
       <Footer />
     </div>
