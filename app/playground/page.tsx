@@ -8,7 +8,8 @@ export default function PlaygroundPage() {
   // State Utama Lab
   const [array, setArray] = useState<number[]>([45, 12, 88, 33, 5, 67, 23, 91, 18, 50]);
   const [algorithm, setAlgorithm] = useState<string>('bubble');
-  const [speed, setSpeed] = useState<number>(300); // Fitur Baru: Slider Kecepatan (ms)
+  const [speed, setSpeed] = useState<number>(300);
+  const [customInput, setCustomInput] = useState<string>(""); // Fitur Baru: State Input Manual
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   
   // State Animasi Visual
@@ -18,7 +19,7 @@ export default function PlaygroundPage() {
   
   // State Terminal Log
   const [logs, setLogs] = useState<string[]>([
-    "💬 System ready. Pilih algoritma dan klik 'Visualisasikan' untuk memulai simulasi cloud."
+    "💬 System ready. Pilih algoritma atau masukkan deret angka manual, lalu klik 'Visualisasikan'."
   ]);
   const terminalRef = useRef<HTMLDivElement>(null);
 
@@ -40,12 +41,42 @@ export default function PlaygroundPage() {
     setLogs(prev => [...prev, `🔄 Array baru diacak: [${newArr.join(', ')}]`]);
   };
 
-  // Fungsi menambah pesan ke terminal
-  const addLog = (msg: string) => {
-    setLogs(prev => [...prev.slice(-30), msg]); // Simpan maksimal 30 baris log terakhir
+  // Fitur Baru: Fungsi memproses & menerapkan input angka manual dari pengguna
+  const handleApplyCustomInput = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (isPlaying) return;
+
+    // Parser: pecah berdasarkan koma, ubah ke integer, & filter karakter non-angka
+    const parsed = customInput
+      .split(',')
+      .map(str => parseInt(str.trim(), 10))
+      .filter(num => !isNaN(num) && num > 0 && num <= 500);
+
+    // Validasi jumlah elemen
+    if (parsed.length < 3) {
+      addLog("⚠️ Input gagal: Masukkan minimal 3 angka valid berpemisah koma (contoh: 10, 50, 23).");
+      return;
+    }
+    if (parsed.length > 20) {
+      addLog("⚠️ Terlalu banyak elemen: Maksimal 20 angka agar visualisasi balok tetap optimal.");
+      return;
+    }
+
+    // Terapkan ke kanvas
+    setArray(parsed);
+    setComparingIdx([]);
+    setSwappedIdx([]);
+    setSortedIdx([]);
+    addLog(`🛠️ Data manual berhasil diterapkan: [${parsed.join(', ')}]`);
+    setCustomInput("");
   };
 
-  // Fungsi Utama Pemanggil Cloud API Laravel & Eksekusi Animasi
+  // Fungsi menambah pesan ke terminal
+  const addLog = (msg: string) => {
+    setLogs(prev => [...prev.slice(-30), msg]);
+  };
+
+  // Fungsi Utama Pemanggil Cloud API Railway & Eksekusi Animasi
   const handleSimulate = async () => {
     if (isPlaying) return;
     setIsPlaying(true);
@@ -55,7 +86,6 @@ export default function PlaygroundPage() {
     addLog(`🚀 Mengirim request ke Cloud Railway (Algoritma: ${algorithm.toUpperCase()})...`);
 
     try {
-      // Panggil endpoint API Railway
       const response = await fetch('https://sorting-playground-backend-production.up.railway.app/api/simulate', {
         method: 'POST',
         headers: {
@@ -77,20 +107,16 @@ export default function PlaygroundPage() {
 
       addLog(`✅ Data diterima dari cloud! Memutar animasi dengan durasi jeda ${speed}ms...`);
 
-      // Looping langkah animasi sesuai Slider Kecepatan
       for (let i = 0; i < steps.length; i++) {
         const step = steps[i];
         
-        // Perbarui posisi elemen array
         if (step.array) setArray(step.array);
         
-        // Perbarui status warna balok
         const comp = step.comparing || [];
         const swap = step.swapped ? comp : [];
         setComparingIdx(comp);
         setSwappedIdx(swap);
 
-        // Catat ke log terminal
         if (comp.length === 2) {
           const [idx1, idx2] = comp;
           if (step.swapped) {
@@ -100,11 +126,9 @@ export default function PlaygroundPage() {
           }
         }
 
-        // Jeda animasi sesuai state slider 'speed'
         await new Promise(resolve => setTimeout(resolve, speed));
       }
 
-      // Tandai seluruh elemen selesai terurut
       setSortedIdx(Array.from({ length: array.length }, (_, i) => i));
       setComparingIdx([]);
       setSwappedIdx([]);
@@ -124,17 +148,19 @@ export default function PlaygroundPage() {
     <div className="min-h-screen bg-dicoding-bg flex flex-col justify-between">
       {/* Top Navbar Lab */}
       <header className="bg-white border-b border-dicoding-border px-6 py-4 shadow-sm sticky top-0 z-10">
-        <div className="max-w-6xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <Link 
-              href="/" 
-              className="text-sm font-semibold text-dicoding-blue hover:underline bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-100"
-            >
-              ← Kembali ke Katalog
-            </Link>
-            <h1 className="text-xl font-extrabold text-dicoding-navy flex items-center gap-2">
-              <span>🛠️</span> Interactive Algorithm Lab
-            </h1>
+        <div className="max-w-6xl mx-auto flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Link 
+                href="/" 
+                className="text-sm font-semibold text-dicoding-blue hover:underline bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-100"
+              >
+                ← Kembali ke Katalog
+              </Link>
+              <h1 className="text-xl font-extrabold text-dicoding-navy flex items-center gap-2">
+                <span>🛠️</span> Interactive Algorithm Lab
+              </h1>
+            </div>
           </div>
 
           {/* Control Toolbar */}
@@ -162,9 +188,9 @@ export default function PlaygroundPage() {
                 value={speed}
                 onChange={(e) => setSpeed(Number(e.target.value))}
                 disabled={isPlaying}
-                className="w-24 accent-dicoding-blue cursor-pointer disabled:opacity-50"
+                className="w-20 accent-dicoding-blue cursor-pointer disabled:opacity-50"
               />
-              <span className="text-xs font-mono font-bold text-dicoding-blue w-12 text-right">
+              <span className="text-xs font-mono font-bold text-dicoding-blue w-11 text-right">
                 {speed}ms
               </span>
             </div>
@@ -173,20 +199,45 @@ export default function PlaygroundPage() {
             <button
               onClick={generateRandomArray}
               disabled={isPlaying}
-              className="px-4 py-2 bg-white border border-dicoding-border text-dicoding-navy hover:bg-slate-50 font-semibold text-sm rounded-lg transition-all disabled:opacity-50 shadow-sm"
+              className="px-3.5 py-2 bg-white border border-dicoding-border text-dicoding-navy hover:bg-slate-50 font-semibold text-sm rounded-lg transition-all disabled:opacity-50 shadow-sm flex items-center gap-1.5"
             >
-              🔄 Acak Array
+              <span>🔄</span> Acak
             </button>
 
             {/* Tombol Mulai Visualisasi */}
             <button
               onClick={handleSimulate}
               disabled={isPlaying}
-              className="px-6 py-2 bg-dicoding-blue hover:bg-dicoding-blue-hover text-white font-semibold text-sm rounded-lg transition-all shadow-md disabled:opacity-50 flex items-center gap-2"
+              className="px-5 py-2 bg-dicoding-blue hover:bg-dicoding-blue-hover text-white font-semibold text-sm rounded-lg transition-all shadow-md disabled:opacity-50 flex items-center gap-2"
             >
               {isPlaying ? "⏳ Memutar..." : "▶ Visualisasikan"}
             </button>
           </div>
+        </div>
+
+        {/* Sub-toolbar: Input Angka Manual */}
+        <div className="max-w-6xl mx-auto mt-3 pt-3 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+          <span className="text-slate-500 font-medium">
+            💡 <strong className="text-slate-700">Tips Lab:</strong> Anda dapat menguji kasus khusus dengan memasukkan deret angka sendiri di sebelah kanan.
+          </span>
+          
+          <form onSubmit={handleApplyCustomInput} className="flex items-center gap-2">
+            <input
+              type="text"
+              placeholder="Contoh: 15, 3, 88, 12, 45"
+              value={customInput}
+              onChange={(e) => setCustomInput(e.target.value)}
+              disabled={isPlaying}
+              className="bg-slate-50 border border-dicoding-border rounded-lg px-3 py-1.5 text-xs font-mono w-52 sm:w-64 text-dicoding-navy outline-none focus:ring-2 focus:ring-dicoding-blue disabled:opacity-50 placeholder:text-slate-400"
+            />
+            <button
+              type="submit"
+              disabled={isPlaying || !customInput.trim()}
+              className="px-3.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-white font-semibold rounded-lg transition-all disabled:opacity-40 shadow-sm whitespace-nowrap"
+            >
+              📥 Set Data
+            </button>
+          </form>
         </div>
       </header>
 
@@ -195,7 +246,7 @@ export default function PlaygroundPage() {
         {/* Kanvas Visualisasi Balok */}
         <div className="bg-white rounded-2xl border border-dicoding-border p-6 md:p-10 shadow-sm flex flex-col justify-between min-h-[420px]">
           <div className="flex items-center justify-between border-b border-slate-100 pb-4 mb-6">
-            <div className="flex items-center gap-4 text-xs font-bold text-slate-600">
+            <div className="flex flex-wrap items-center gap-4 text-xs font-bold text-slate-600">
               <span className="flex items-center gap-1.5">
                 <span className="w-3 h-3 rounded-full bg-dicoding-blue inline-block"></span> Belum Terurut
               </span>
@@ -209,7 +260,7 @@ export default function PlaygroundPage() {
                 <span className="w-3 h-3 rounded-full bg-emerald-500 inline-block"></span> Posisi Terurut
               </span>
             </div>
-            <div className="text-xs font-mono font-semibold text-slate-400">
+            <div className="text-xs font-mono font-semibold text-slate-400 whitespace-nowrap">
               Total Elemen: {array.length}
             </div>
           </div>
@@ -253,9 +304,9 @@ export default function PlaygroundPage() {
               <div 
                 key={index} 
                 className={
-                  log.includes("❌") ? "text-rose-400 font-semibold" :
+                  log.includes("❌") || log.includes("⚠️") ? "text-rose-400 font-semibold" :
                   log.includes("🎯") ? "text-emerald-400 font-bold" :
-                  log.includes("🚀") ? "text-cyan-400 font-semibold" :
+                  log.includes("🚀") || log.includes("🛠️") ? "text-cyan-400 font-semibold" :
                   log.includes("🔄 Swap") ? "text-amber-300" : "text-slate-300"
                 }
               >
