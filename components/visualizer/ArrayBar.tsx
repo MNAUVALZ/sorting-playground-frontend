@@ -15,11 +15,9 @@ export default function ArrayBar({
   isSwapped = false,
   isSorted = false,
 }: ArrayBarProps) {
-  // Menentukan persentase tinggi balok relatif terhadap nilai maksimal
   const heightPercentage = Math.max(15, Math.round((value / maxValue) * 100));
 
-  // Menentukan warna balok berdasarkan status animasi
-  let barColor = 'bg-dicoding-blue group-hover:bg-dicoding-blue-hover';
+  let barColor = 'bg-blue-600 group-hover:bg-blue-700';
   if (isSorted) {
     barColor = 'bg-emerald-500 shadow-emerald-200';
   } else if (isSwapped) {
@@ -30,12 +28,10 @@ export default function ArrayBar({
 
   return (
     <div className="flex flex-col items-center gap-2 flex-1 max-w-[40px] group">
-      {/* Label Angka di Atas Balok */}
-      <span className="text-xs font-mono font-bold text-dicoding-navy transition-all duration-200">
+      <span className="text-xs font-mono font-bold text-slate-800 transition-all duration-200">
         {value}
       </span>
 
-      {/* Balok Grafis */}
       <div className="w-full bg-slate-200 rounded-t-lg h-64 flex items-end justify-center p-1 shadow-inner overflow-hidden">
         <div
           style={{ height: `${heightPercentage}%` }}

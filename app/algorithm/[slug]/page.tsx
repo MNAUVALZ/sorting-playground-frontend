@@ -100,10 +100,45 @@ end procedure`,
 end procedure`,
     citation: "Estivill-Castro, V., & Wood, D. (1992). A survey of adaptive sorting algorithms. ACM Computing Surveys (CSUR), 24(4), 441-476.",
     doi: "https://doi.10.1145/146370.146381"
+  },
+  'quick-sort': {
+    title: "Quicksort: An Efficient In-Place Divide & Conquer Algorithm",
+    badge: "Lanjutan • Kompleksitas O(n log n)",
+    abstract: "Ditemukan oleh Sir Charles Antony Richard Hoare pada tahun 1959 dan dipublikasikan dalam The Computer Journal (1962), Quicksort adalah algoritma berbasis Divide and Conquer yang menjadi fondasi standar perpustakaan pengurutan di berbagai bahasa pemrograman modern (seperti qsort di C dan sort di C++ STL). Algoritma ini bekerja dengan memilih sebuah elemen sebagai 'pivot' dan mempartisi array sehingga elemen yang lebih kecil berada di kiri pivot dan yang lebih besar di kanan pivot.",
+    bestCase: "O(n log n) - Partisi seimbang di posisi tengah array",
+    worstCase: "O(n²) - Saat pivot selalu merupakan elemen terkecil atau terbesar",
+    spaceComp: "O(log n) - Auxiliary Stack Space untuk pemanggilan rekursif",
+    mechanism: [
+      "Pilih satu elemen dari array sebagai titik acuan atau 'pivot' (pada implementasi standar biasanya mengambil elemen terakhir).",
+      "Lakukan proses partisi (Partitioning): atur ulang array sehingga seluruh elemen yang bernilai lebih kecil dari pivot berada di sebelah kiri, dan elemen yang lebih besar berada di sebelah kanan.",
+      "Setelah partisi selesai, elemen pivot otomatis berada di posisi indeks akhir yang terurut sempurna.",
+      "Terapkan langkah-langkah di atas secara rekursif pada sub-array sebelah kiri pivot dan sub-array sebelah kanan pivot hingga seluruh elemen terurut."
+    ],
+    pseudocode: `procedure quickSort(A : array of items, low : int, high : int)
+    if low < high then
+        pivot_idx = partition(A, low, high)
+        quickSort(A, low, pivot_idx - 1)
+        quickSort(A, pivot_idx + 1, high)
+    end if
+end procedure
+
+procedure partition(A : array of items, low : int, high : int) returns int
+    pivot = A[high]
+    i = low - 1
+    for j = low to high - 1 do
+        if A[j] <= pivot then
+            i = i + 1
+            swap(A[i], A[j])
+        end if
+    end for
+    swap(A[i + 1], A[high])
+    return i + 1
+end procedure`,
+    citation: "Hoare, C. A. R. (1962). Quicksort. The Computer Journal, 5(1), 10-15.",
+    doi: "https://doi.10.1093/comjnl/5.1.10"
   }
 };
 
-// Menggunakan tipe 'any' dan Promise.resolve agar lolos kompilasi di Next.js versi 13, 14, maupun 15
 export default async function AlgorithmDetailPage({ params }: any) {
   const resolvedParams = await Promise.resolve(params);
   const material = journalMaterials[resolvedParams?.slug];
@@ -113,38 +148,37 @@ export default async function AlgorithmDetailPage({ params }: any) {
   }
 
   return (
-    <div className="min-h-screen bg-dicoding-bg py-12 px-6">
+    <div className="min-h-screen bg-slate-50 py-12 px-6">
       <div className="max-w-4xl mx-auto">
         <Link 
           href="/" 
-          className="inline-flex items-center gap-2 text-sm font-semibold text-dicoding-blue hover:underline mb-8"
+          className="inline-flex items-center gap-2 text-sm font-semibold text-blue-600 hover:underline mb-8"
         >
           ← Kembali ke Katalog Modul
         </Link>
 
-        <article className="bg-white rounded-2xl border border-dicoding-border p-8 md:p-12 shadow-sm">
-          <span className="px-3 py-1 bg-blue-50 text-dicoding-blue border border-blue-200 rounded-full text-xs font-bold uppercase tracking-wider">
+        <article className="bg-white rounded-2xl border border-slate-200 p-8 md:p-12 shadow-sm">
+          <span className="px-3 py-1 bg-blue-50 text-blue-700 border border-blue-200 rounded-full text-xs font-bold uppercase tracking-wider">
             {material.badge}
           </span>
-          <h1 className="text-3xl md:text-4xl font-extrabold text-dicoding-navy mt-4 mb-6 leading-tight">
+          <h1 className="text-3xl md:text-4xl font-extrabold text-slate-900 mt-4 mb-6 leading-tight">
             {material.title}
           </h1>
 
-          <div className="bg-slate-50 border-l-4 border-dicoding-blue p-6 rounded-r-xl mb-10">
+          <div className="bg-slate-50 border-l-4 border-blue-600 p-6 rounded-r-xl mb-10">
             <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-2">
               <span>🏛️</span> Abstrak & Latar Belakang Riset Jurnal
             </h3>
-            {/* Menggunakan entitas &quot; agar tidak memicu eror ESLint unescaped entities di Vercel */}
             <p className="text-slate-700 leading-relaxed italic text-sm md:text-base">
               &quot;{material.abstract}&quot;
             </p>
             <div className="mt-4 pt-4 border-t border-slate-200 text-xs font-mono text-slate-600">
               <span className="font-bold">Referensi:</span> {material.citation} <br/>
-              <span className="text-dicoding-blue">{material.doi}</span>
+              <span className="text-blue-600">{material.doi}</span>
             </div>
           </div>
 
-          <h2 className="text-2xl font-bold text-dicoding-navy mb-4">
+          <h2 className="text-2xl font-bold text-slate-900 mb-4">
             ⚡ Analisis Kompleksitas Algoritma
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10">
@@ -162,23 +196,23 @@ export default async function AlgorithmDetailPage({ params }: any) {
             </div>
           </div>
 
-          <h2 className="text-2xl font-bold text-dicoding-navy mb-4">
+          <h2 className="text-2xl font-bold text-slate-900 mb-4">
             🔄 Mekanisme Kerja Algoritma
           </h2>
-          <ol className="list-decimal list-inside space-y-3 text-dicoding-text mb-10 leading-relaxed bg-slate-50 p-6 rounded-xl border border-slate-200">
+          <ol className="list-decimal list-inside space-y-3 text-slate-700 mb-10 leading-relaxed bg-slate-50 p-6 rounded-xl border border-slate-200">
             {material.mechanism.map((step, idx) => (
               <li key={idx} className="pl-2">{step}</li>
             ))}
           </ol>
 
-          <h2 className="text-2xl font-bold text-dicoding-navy mb-4">
+          <h2 className="text-2xl font-bold text-slate-900 mb-4">
             💻 Formal Pseudocode
           </h2>
           <div className="bg-slate-900 text-slate-100 p-6 rounded-xl font-mono text-sm overflow-x-auto shadow-inner mb-10 border border-slate-800">
             <pre>{material.pseudocode}</pre>
           </div>
 
-          <div className="bg-gradient-to-r from-dicoding-navy to-dicoding-dark p-8 rounded-xl text-white flex flex-col md:flex-row items-center justify-between gap-6 shadow-lg">
+          <div className="bg-gradient-to-r from-slate-900 to-slate-800 p-8 rounded-xl text-white flex flex-col md:flex-row items-center justify-between gap-6 shadow-lg">
             <div>
               <h3 className="text-xl font-bold mb-1">Siap menguji teori ini secara langsung?</h3>
               <p className="text-slate-300 text-sm">
@@ -187,7 +221,7 @@ export default async function AlgorithmDetailPage({ params }: any) {
             </div>
             <Link 
               href="/playground" 
-              className="px-6 py-3 bg-dicoding-blue hover:bg-dicoding-blue-hover text-white font-semibold rounded-lg shadow-md whitespace-nowrap transition-all"
+              className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-md whitespace-nowrap transition-all"
             >
               Buka Lab Visualisasi 🛠️
             </Link>

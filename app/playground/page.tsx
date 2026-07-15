@@ -5,32 +5,27 @@ import Link from 'next/link';
 import ArrayBar from '@/components/visualizer/ArrayBar';
 
 export default function PlaygroundPage() {
-  // State Utama Lab
   const [array, setArray] = useState<number[]>([45, 12, 88, 33, 5, 67, 23, 91, 18, 50]);
   const [algorithm, setAlgorithm] = useState<string>('bubble');
   const [speed, setSpeed] = useState<number>(300);
-  const [customInput, setCustomInput] = useState<string>(""); // Fitur Baru: State Input Manual
+  const [customInput, setCustomInput] = useState<string>("");
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   
-  // State Animasi Visual
   const [comparingIdx, setComparingIdx] = useState<number[]>([]);
   const [swappedIdx, setSwappedIdx] = useState<number[]>([]);
   const [sortedIdx, setSortedIdx] = useState<number[]>([]);
   
-  // State Terminal Log
   const [logs, setLogs] = useState<string[]>([
     "💬 System ready. Pilih algoritma atau masukkan deret angka manual, lalu klik 'Visualisasikan'."
   ]);
   const terminalRef = useRef<HTMLDivElement>(null);
 
-  // Auto-scroll terminal log ke bawah
   useEffect(() => {
     if (terminalRef.current) {
       terminalRef.current.scrollTop = terminalRef.current.scrollHeight;
     }
   }, [logs]);
 
-  // Fungsi menghasilkan array acak baru
   const generateRandomArray = () => {
     if (isPlaying) return;
     const newArr = Array.from({ length: 10 }, () => Math.floor(Math.random() * 95) + 5);
@@ -41,18 +36,15 @@ export default function PlaygroundPage() {
     setLogs(prev => [...prev, `🔄 Array baru diacak: [${newArr.join(', ')}]`]);
   };
 
-  // Fitur Baru: Fungsi memproses & menerapkan input angka manual dari pengguna
   const handleApplyCustomInput = (e: React.FormEvent) => {
     e.preventDefault();
     if (isPlaying) return;
 
-    // Parser: pecah berdasarkan koma, ubah ke integer, & filter karakter non-angka
     const parsed = customInput
       .split(',')
       .map(str => parseInt(str.trim(), 10))
       .filter(num => !isNaN(num) && num > 0 && num <= 500);
 
-    // Validasi jumlah elemen
     if (parsed.length < 3) {
       addLog("⚠️ Input gagal: Masukkan minimal 3 angka valid berpemisah koma (contoh: 10, 50, 23).");
       return;
@@ -62,7 +54,6 @@ export default function PlaygroundPage() {
       return;
     }
 
-    // Terapkan ke kanvas
     setArray(parsed);
     setComparingIdx([]);
     setSwappedIdx([]);
@@ -71,12 +62,10 @@ export default function PlaygroundPage() {
     setCustomInput("");
   };
 
-  // Fungsi menambah pesan ke terminal
   const addLog = (msg: string) => {
     setLogs(prev => [...prev.slice(-30), msg]);
   };
 
-  // Fungsi Utama Pemanggil Cloud API Railway & Eksekusi Animasi
   const handleSimulate = async () => {
     if (isPlaying) return;
     setIsPlaying(true);
@@ -145,40 +134,37 @@ export default function PlaygroundPage() {
   const maxVal = Math.max(...array, 100);
 
   return (
-    <div className="min-h-screen bg-dicoding-bg flex flex-col justify-between">
-      {/* Top Navbar Lab */}
-      <header className="bg-white border-b border-dicoding-border px-6 py-4 shadow-sm sticky top-0 z-10">
+    <div className="min-h-screen bg-slate-50 flex flex-col justify-between">
+      <header className="bg-white border-b border-slate-200 px-6 py-4 shadow-sm sticky top-0 z-10">
         <div className="max-w-6xl mx-auto flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Link 
                 href="/" 
-                className="text-sm font-semibold text-dicoding-blue hover:underline bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-100"
+                className="text-sm font-semibold text-blue-600 hover:underline bg-blue-50 px-3 py-1.5 rounded-xl border border-blue-100"
               >
                 ← Kembali ke Katalog
               </Link>
-              <h1 className="text-xl font-extrabold text-dicoding-navy flex items-center gap-2">
+              <h1 className="text-xl font-extrabold text-slate-900 flex items-center gap-2">
                 <span>🛠️</span> Interactive Algorithm Lab
               </h1>
             </div>
           </div>
 
-          {/* Control Toolbar */}
           <div className="flex flex-wrap items-center gap-3">
-            {/* Dropdown Algoritma */}
             <select
               value={algorithm}
               onChange={(e) => setAlgorithm(e.target.value)}
               disabled={isPlaying}
-              className="bg-slate-50 border border-dicoding-border text-dicoding-navy text-sm font-semibold rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-dicoding-blue disabled:opacity-50"
+              className="bg-slate-50 border border-slate-300 text-slate-800 text-sm font-semibold rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-blue-600 disabled:opacity-50"
             >
               <option value="bubble">Bubble Sort (O(n²))</option>
               <option value="selection">Selection Sort (O(n²))</option>
               <option value="insertion">Insertion Sort (O(n²))</option>
+              <option value="quick">Quick Sort (O(n log n))</option>
             </select>
 
-            {/* Fitur Baru: Slider Kecepatan */}
-            <div className="flex items-center gap-2 bg-slate-50 border border-dicoding-border px-3 py-1.5 rounded-lg">
+            <div className="flex items-center gap-2 bg-slate-50 border border-slate-300 px-3 py-1.5 rounded-xl">
               <span className="text-xs font-bold text-slate-500">⏱️ Tempo:</span>
               <input
                 type="range"
@@ -188,34 +174,31 @@ export default function PlaygroundPage() {
                 value={speed}
                 onChange={(e) => setSpeed(Number(e.target.value))}
                 disabled={isPlaying}
-                className="w-20 accent-dicoding-blue cursor-pointer disabled:opacity-50"
+                className="w-20 accent-blue-600 cursor-pointer disabled:opacity-50"
               />
-              <span className="text-xs font-mono font-bold text-dicoding-blue w-11 text-right">
+              <span className="text-xs font-mono font-bold text-blue-600 w-11 text-right">
                 {speed}ms
               </span>
             </div>
 
-            {/* Tombol Acak Array */}
             <button
               onClick={generateRandomArray}
               disabled={isPlaying}
-              className="px-3.5 py-2 bg-white border border-dicoding-border text-dicoding-navy hover:bg-slate-50 font-semibold text-sm rounded-lg transition-all disabled:opacity-50 shadow-sm flex items-center gap-1.5"
+              className="px-3.5 py-2 bg-white border border-slate-300 text-slate-800 hover:bg-slate-50 font-semibold text-sm rounded-xl transition-all disabled:opacity-50 shadow-sm flex items-center gap-1.5"
             >
               <span>🔄</span> Acak
             </button>
 
-            {/* Tombol Mulai Visualisasi */}
             <button
               onClick={handleSimulate}
               disabled={isPlaying}
-              className="px-5 py-2 bg-dicoding-blue hover:bg-dicoding-blue-hover text-white font-semibold text-sm rounded-lg transition-all shadow-md disabled:opacity-50 flex items-center gap-2"
+              className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm rounded-xl transition-all shadow-md disabled:opacity-50 flex items-center gap-2"
             >
               {isPlaying ? "⏳ Memutar..." : "▶ Visualisasikan"}
             </button>
           </div>
         </div>
 
-        {/* Sub-toolbar: Input Angka Manual */}
         <div className="max-w-6xl mx-auto mt-3 pt-3 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
           <span className="text-slate-500 font-medium">
             💡 <strong className="text-slate-700">Tips Lab:</strong> Anda dapat menguji kasus khusus dengan memasukkan deret angka sendiri di sebelah kanan.
@@ -228,12 +211,12 @@ export default function PlaygroundPage() {
               value={customInput}
               onChange={(e) => setCustomInput(e.target.value)}
               disabled={isPlaying}
-              className="bg-slate-50 border border-dicoding-border rounded-lg px-3 py-1.5 text-xs font-mono w-52 sm:w-64 text-dicoding-navy outline-none focus:ring-2 focus:ring-dicoding-blue disabled:opacity-50 placeholder:text-slate-400"
+              className="bg-slate-50 border border-slate-300 rounded-xl px-3 py-1.5 text-xs font-mono w-52 sm:w-64 text-slate-900 outline-none focus:ring-2 focus:ring-blue-600 disabled:opacity-50 placeholder:text-slate-400"
             />
             <button
               type="submit"
               disabled={isPlaying || !customInput.trim()}
-              className="px-3.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-white font-semibold rounded-lg transition-all disabled:opacity-40 shadow-sm whitespace-nowrap"
+              className="px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white font-semibold rounded-xl transition-all disabled:opacity-40 shadow-sm whitespace-nowrap"
             >
               📥 Set Data
             </button>
@@ -241,14 +224,12 @@ export default function PlaygroundPage() {
         </div>
       </header>
 
-      {/* Main Workspace Area */}
       <main className="max-w-6xl mx-auto w-full px-6 py-8 flex-1 flex flex-col gap-8">
-        {/* Kanvas Visualisasi Balok */}
-        <div className="bg-white rounded-2xl border border-dicoding-border p-6 md:p-10 shadow-sm flex flex-col justify-between min-h-[420px]">
+        <div className="bg-white rounded-2xl border border-slate-200 p-6 md:p-10 shadow-sm flex flex-col justify-between min-h-[420px]">
           <div className="flex items-center justify-between border-b border-slate-100 pb-4 mb-6">
             <div className="flex flex-wrap items-center gap-4 text-xs font-bold text-slate-600">
               <span className="flex items-center gap-1.5">
-                <span className="w-3 h-3 rounded-full bg-dicoding-blue inline-block"></span> Belum Terurut
+                <span className="w-3 h-3 rounded-full bg-blue-600 inline-block"></span> Belum Terurut
               </span>
               <span className="flex items-center gap-1.5">
                 <span className="w-3 h-3 rounded-full bg-amber-400 inline-block"></span> Sedang Dibandingkan
@@ -265,7 +246,6 @@ export default function PlaygroundPage() {
             </div>
           </div>
 
-          {/* Render Balok Array */}
           <div className="flex items-end justify-center gap-2 md:gap-4 flex-1 px-4 h-full">
             {array.map((val, idx) => (
               <ArrayBar
@@ -280,7 +260,6 @@ export default function PlaygroundPage() {
           </div>
         </div>
 
-        {/* Panel Log Eksekusi IDE/Terminal */}
         <div className="bg-slate-900 rounded-2xl border border-slate-800 p-6 shadow-lg flex flex-col h-64">
           <div className="flex items-center justify-between border-b border-slate-800 pb-3 mb-3">
             <span className="text-xs font-bold text-slate-400 flex items-center gap-2">
@@ -295,7 +274,6 @@ export default function PlaygroundPage() {
             </button>
           </div>
 
-          {/* Area Output Log */}
           <div 
             ref={terminalRef} 
             className="flex-1 overflow-y-auto font-mono text-xs space-y-1.5 pr-2 scrollbar-thin scrollbar-thumb-slate-700"
@@ -318,8 +296,7 @@ export default function PlaygroundPage() {
         </div>
       </main>
 
-      {/* Footer Minimalis */}
-      <footer className="py-6 text-center text-xs text-dicoding-text-light border-t border-dicoding-border mt-12 bg-white">
+      <footer className="py-6 text-center text-xs text-slate-500 border-t border-slate-200 mt-12 bg-white">
         Interactive Sorting Playground Full-Stack Architecture • Powered by Next.js & Laravel Railway Cloud
       </footer>
     </div>

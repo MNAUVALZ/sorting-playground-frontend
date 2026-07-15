@@ -31,23 +31,32 @@ export default function Home() {
       stepsCount: "6 - 15 Langkah",
       journalRef: "Estivill-Castro, V., & Wood, D. (1992). A survey of adaptive sorting algorithms. ACM Computing Surveys.",
     },
+    {
+      title: "Quick Sort",
+      description: "Ditemukan oleh Sir C. A. R. Hoare (1962), algoritma Divide & Conquer ini mempartisi array berdasarkan elemen pivot. Sangat efisien dan menjadi standar perpustakaan pengurutan di berbagai bahasa pemrograman modern.",
+      complexity: "O(n log n)",
+      difficulty: "Lanjutan",
+      slug: "quick-sort",
+      stepsCount: "10 - 25 Langkah",
+      journalRef: "Hoare, C. A. R. (1962). Quicksort. The Computer Journal, 5(1), 10-15.",
+    },
   ];
 
   return (
-    <main className="min-h-screen pb-20">
+    <main className="min-h-screen bg-slate-50 pb-20">
       <Hero />
       <section id="katalog" className="max-w-6xl mx-auto px-6 pt-16">
         <div className="flex flex-col md:flex-row md:items-end justify-between mb-10 gap-4">
           <div>
-            <h2 className="text-3xl font-extrabold text-dicoding-navy tracking-tight">
+            <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight">
               Katalog Modul Algoritma
             </h2>
-            <p className="text-dicoding-text-light mt-2">
+            <p className="text-slate-600 mt-2">
               Materi dipadukan langsung dari publikasi ilmiah IEEE, ACM, dan literatur standar ilmu komputer.
             </p>
           </div>
-          <div className="text-sm font-semibold text-dicoding-blue bg-blue-50 px-4 py-2 rounded-lg self-start md:self-auto border border-blue-100">
-            📚 Berbasis Jurnal Ilmiah
+          <div className="text-sm font-semibold text-blue-700 bg-blue-50 px-4 py-2 rounded-xl self-start md:self-auto border border-blue-200 shadow-sm">
+            📚 Total 4 Modul Tersedia
           </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
