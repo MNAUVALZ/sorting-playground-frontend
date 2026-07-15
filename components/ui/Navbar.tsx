@@ -12,6 +12,7 @@ export default function Navbar() {
     { name: 'Beranda', href: '/' },
     { name: 'Modul', href: '/catalog' },
     { name: 'Simulator', href: '/playground' },
+    { name: '📈 Grafik Big-O', href: '/complexity' },
   ];
 
   return (
@@ -24,7 +25,7 @@ export default function Navbar() {
           <span className="tracking-tight">Sort<span className="text-blue-600">Lab</span>.id</span>
         </Link>
 
-        <div className="hidden md:flex items-center gap-8 font-semibold text-sm">
+        <div className="hidden md:flex items-center gap-6 font-semibold text-sm">
           {navLinks.map((link) => {
             const isActive = pathname === link.href;
             return (
@@ -42,7 +43,7 @@ export default function Navbar() {
         <div className="hidden md:flex items-center">
           <Link
             href="/playground"
-            className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg shadow-sm transition-all"
+            className="px-5 py-2 bg-slate-900 hover:bg-slate-800 text-white text-sm font-semibold rounded-lg shadow-sm transition-all"
           >
             Mulai Simulasi
           </Link>
