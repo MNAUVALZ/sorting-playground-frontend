@@ -47,15 +47,16 @@ export default function AlgorithmCard({ index, title, description, complexity, d
       {/* TIGA TOMBOL BARU: BACA MATERI, KUIS, SIMULATOR */}
       <div className="flex flex-col gap-2.5 shrink-0 w-full md:w-44 relative z-10 justify-center">
         <Link href={`/algorithm/${slug}`} className="w-full text-center py-2.5 px-3 rounded-xl bg-slate-900 text-white font-bold text-xs hover:bg-slate-800 transition-all shadow-sm">
-          📖 Baca Materi
+          Baca Materi
         </Link>
         <Link href={`/algorithm/${slug}/quiz`} className="w-full text-center py-2.5 px-3 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs hover:bg-amber-600 transition-all shadow-sm">
-          📝 Mulai Kuis
+          Mulai Kuis
         </Link>
         <Link href="/playground" className="w-full text-center py-2.5 px-3 rounded-xl border border-slate-300 text-slate-700 font-bold text-xs hover:border-blue-600 hover:text-blue-600 transition-all bg-white">
-          🛠️ Simulator
+          Simulator
         </Link>
       </div>
     </div>
   );
 }
+

@@ -633,7 +633,7 @@ export default function PlaygroundPage() {
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
           <div className="bg-slate-900 px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800">
             <h3 className="font-extrabold text-white flex items-center gap-2 no-print">
-              <span>📋</span> Tabel Riwayat Data Penuh (Trace Table)</h3><button onClick={() => window.print()} className="no-print px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs rounded-lg shadow-md transition-all flex items-center gap-2"><span>🖨️</span> Ekspor PDF Laporan</button><h3 className="hidden">
+              <span>📋</span> Tabel Riwayat Data Penuh (Trace Table)</h3><button onClick={() => window.print()} className="no-print px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs rounded-lg shadow-md transition-all flex items-center gap-2">Ekspor PDF Laporan</button><h3 className="hidden">
             </h3>
             
             {labMode === 'race' && (
@@ -695,4 +695,5 @@ export default function PlaygroundPage() {
     </div>
   );
 }
+
 

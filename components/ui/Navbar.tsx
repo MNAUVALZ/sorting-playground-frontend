@@ -24,7 +24,7 @@ export default function Navbar() {
     { name: 'Beranda', href: '/' },
     { name: 'Modul Pembelajaran', href: '/catalog' },
     { name: 'Simulator', href: '/playground' },
-    { name: '🧰 Toolkit Akademis', href: '/toolkit' },
+    { name: 'Toolkit Akademis', href: '/toolkit' },
   ];
 
   return (
@@ -51,15 +51,16 @@ export default function Navbar() {
           })}
         </div>
 
-        <div className="flex items-center gap-3">
-          {/* TOMBOL SAKELAR DARK/LIGHT MODE */}
-          <button
-            onClick={toggleTheme}
-            className="flex items-center justify-center w-10 h-10 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl transition-all shadow-sm border border-slate-200"
-            title="Toggle Dark/Light Mode"
-          >
-            {isDark ? '☀️' : '🌙'}
-          </button>
+        <div className="flex items-center gap-4">
+          {/* SAKELAR TOGGLE DARK MODE DENGAN TEKS */}
+          <div onClick={toggleTheme} className="flex items-center gap-2 cursor-pointer group">
+            <div className={`relative w-11 h-6 rounded-full transition-colors duration-300 ${isDark ? 'bg-blue-600' : 'bg-slate-300'}`}>
+              <div className={`absolute top-1 left-1 w-4 h-4 bg-white rounded-full transition-transform duration-300 shadow-sm ${isDark ? 'translate-x-5' : 'translate-x-0'}`}></div>
+            </div>
+            <span className="text-xs font-bold text-slate-600 group-hover:text-slate-900 transition-colors hidden sm:block select-none w-16">
+              {isDark ? 'Dark Mode' : 'Light Mode'}
+            </span>
+          </div>
 
           <button
             onClick={() => setIsOpen(!isOpen)}

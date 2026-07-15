@@ -278,13 +278,13 @@ export default async function AlgorithmDetailPage({ params }: PageProps) {
                   href={`/algorithm/${resolvedParams.slug}/quiz`} 
                   className="w-full sm:w-auto bg-blue-600 text-white font-extrabold px-8 py-4 rounded-xl shadow-[0_0_20px_rgba(37,99,235,0.4)] hover:bg-blue-500 transition-all hover:-translate-y-1 hover:shadow-[0_0_30px_rgba(37,99,235,0.6)] flex items-center justify-center gap-2"
                 >
-                  📝 Mulai Kuis Evaluasi
+                  Mulai Kuis Evaluasi
                 </Link>
                 <Link 
                   href="/playground" 
                   className="w-full sm:w-auto bg-slate-800 border border-slate-700 hover:border-slate-500 text-white font-extrabold px-8 py-4 rounded-xl shadow-lg transition-all hover:bg-slate-700 flex items-center justify-center gap-2"
                 >
-                  🛠️ Langsung ke Simulator
+                  Langsung ke Simulator
                 </Link>
               </div>
             </div>
