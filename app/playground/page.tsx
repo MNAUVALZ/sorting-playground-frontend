@@ -1,47 +1,62 @@
-'use client';
+﻿"use client";
 
-import { useState, useEffect } from 'react';
-import ArrayBar from '@/components/visualizer/ArrayBar';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { Play, RotateCcw, Shuffle, ArrowLeft, Zap, Loader2 } from 'lucide-react';
-
-type BarState = 'default' | 'comparing' | 'swapping' | 'sorted';
-
-interface Step {
-  array: number[];
-  comparing: number[];
-  swapping: number[];
-  sorted: number[];
-  explanation: string;
-}
+import ArrayBar from '@/components/visualizer/ArrayBar';
 
 export default function PlaygroundPage() {
-  const [array, setArray] = useState<number[]>([15, 8, 25, 12, 5, 20, 10, 18]);
-  const [currentStep, setCurrentStep] = useState<number>(0);
-  const [steps, setSteps] = useState<Step[]>([]);
-  const [isPlaying, setIsPlaying] = useState<boolean>(false);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+  // State Utama Lab
+  const [array, setArray] = useState<number[]>([45, 12, 88, 33, 5, 67, 23, 91, 18, 50]);
   const [algorithm, setAlgorithm] = useState<string>('bubble');
-  const [explanation, setExplanation] = useState<string>('Tekan tombol Mulai untuk mengambil kalkulasi dari server Laravel API.');
+  const [speed, setSpeed] = useState<number>(300); // Fitur Baru: Slider Kecepatan (ms)
+  const [isPlaying, setIsPlaying] = useState<boolean>(false);
+  
+  // State Animasi Visual
+  const [comparingIdx, setComparingIdx] = useState<number[]>([]);
+  const [swappedIdx, setSwappedIdx] = useState<number[]>([]);
+  const [sortedIdx, setSortedIdx] = useState<number[]>([]);
+  
+  // State Terminal Log
+  const [logs, setLogs] = useState<string[]>([
+    "💬 System ready. Pilih algoritma dan klik 'Visualisasikan' untuk memulai simulasi cloud."
+  ]);
+  const terminalRef = useRef<HTMLDivElement>(null);
 
-  const maxValue = Math.max(...array, 1);
+  // Auto-scroll terminal log ke bawah
+  useEffect(() => {
+    if (terminalRef.current) {
+      terminalRef.current.scrollTop = terminalRef.current.scrollHeight;
+    }
+  }, [logs]);
 
   // Fungsi menghasilkan array acak baru
   const generateRandomArray = () => {
-    setIsPlaying(false);
-    setCurrentStep(0);
-    const newArr = Array.from({ length: 10 }, () => Math.floor(Math.random() * 45) + 5);
+    if (isPlaying) return;
+    const newArr = Array.from({ length: 10 }, () => Math.floor(Math.random() * 95) + 5);
     setArray(newArr);
-    setSteps([]);
-    setExplanation('Array baru berhasil diacak! Pilih algoritma dan tekan Mulai.');
+    setComparingIdx([]);
+    setSwappedIdx([]);
+    setSortedIdx([]);
+    setLogs(prev => [...prev, `🔄 Array baru diacak: [${newArr.join(', ')}]`]);
   };
 
-  // Fungsi menembak ke Backend Laravel API (127.0.0.1:8000)
-  const fetchStepsFromLaravel = async () => {
-    setIsLoading(true);
-    setExplanation('Menghubungi server Laravel API (127.0.0.1:8000)...');
+  // Fungsi menambah pesan ke terminal
+  const addLog = (msg: string) => {
+    setLogs(prev => [...prev.slice(-30), msg]); // Simpan maksimal 30 baris log terakhir
+  };
+
+  // Fungsi Utama Pemanggil Cloud API Laravel & Eksekusi Animasi
+  const handleSimulate = async () => {
+    if (isPlaying) return;
+    setIsPlaying(true);
+    setComparingIdx([]);
+    setSwappedIdx([]);
+    setSortedIdx([]);
+    addLog(`🚀 Mengirim request ke Cloud Railway (Algoritma: ${algorithm.toUpperCase()})...`);
+
     try {
-      const response = await fetch('sorting-playground-backend-production.up.railway.app', {
+      // Panggil endpoint API Railway
+      const response = await fetch('https://sorting-playground-backend-production.up.railway.app/api/simulate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -49,160 +64,213 @@ export default function PlaygroundPage() {
         },
         body: JSON.stringify({
           algorithm: algorithm,
-          array: array,
+          data: array,
         }),
       });
 
       if (!response.ok) {
-        throw new Error(`Error HTTP: ${response.status}`);
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      const data = await response.json();
-      if (data.success && data.steps && data.steps.length > 0) {
-        setSteps(data.steps);
-        setCurrentStep(0);
-        setArray(data.steps[0].array);
-        setIsPlaying(true);
-        setExplanation(`Kalkulasi sukses! Menerima ${data.total_steps} langkah dari backend Laravel.`);
+      const result = await response.json();
+      const steps = result.steps || [];
+
+      addLog(`✅ Data diterima dari cloud! Memutar animasi dengan durasi jeda ${speed}ms...`);
+
+      // Looping langkah animasi sesuai Slider Kecepatan
+      for (let i = 0; i < steps.length; i++) {
+        const step = steps[i];
+        
+        // Perbarui posisi elemen array
+        if (step.array) setArray(step.array);
+        
+        // Perbarui status warna balok
+        const comp = step.comparing || [];
+        const swap = step.swapped ? comp : [];
+        setComparingIdx(comp);
+        setSwappedIdx(swap);
+
+        // Catat ke log terminal
+        if (comp.length === 2) {
+          const [idx1, idx2] = comp;
+          if (step.swapped) {
+            addLog(`🔄 Swap: Elemen [${idx1}] (${step.array[idx1]}) ditukar dengan [${idx2}] (${step.array[idx2]})`);
+          } else {
+            addLog(`🔍 Compare: Elemen [${idx1}] & [${idx2}] posisi sudah sesuai.`);
+          }
+        }
+
+        // Jeda animasi sesuai state slider 'speed'
+        await new Promise(resolve => setTimeout(resolve, speed));
       }
+
+      // Tandai seluruh elemen selesai terurut
+      setSortedIdx(Array.from({ length: array.length }, (_, i) => i));
+      setComparingIdx([]);
+      setSwappedIdx([]);
+      addLog("🎯 Visualisasi selesai! Seluruh elemen array telah terurut sempurna.");
+
     } catch (error) {
-      console.error('API Fetch Error:', error);
-      setExplanation('Gagal terhubung! Pastikan server Laravel `php artisan serve` sedang aktif di port 8000.');
-      setIsPlaying(false);
+      console.error("Simulation error:", error);
+      addLog("❌ Gagal terhubung ke Cloud API Railway. Pastikan server backend sedang aktif.");
     } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Memulai, mengambil data dari API, atau melanjut/jeda animasi
-  const handleStart = () => {
-    if (steps.length === 0 || currentStep >= steps.length - 1) {
-      fetchStepsFromLaravel();
-    } else {
-      setIsPlaying(!isPlaying);
-    }
-  };
-
-  // Loop pewaktu animasi
-  useEffect(() => {
-    let timer: ReturnType<typeof setTimeout> | undefined = undefined;
-    
-    if (isPlaying && currentStep < steps.length - 1) {
-      timer = setTimeout(() => {
-        setCurrentStep((prev) => prev + 1);
-        setArray(steps[currentStep + 1].array);
-        setExplanation(steps[currentStep + 1].explanation);
-      }, 400); // Kecepatan animasi 400 milidetik per langkah
-    } else if (currentStep >= steps.length - 1 && steps.length > 0) {
       setIsPlaying(false);
     }
-    
-    return () => {
-      if (timer) clearTimeout(timer);
-    };
-  }, [isPlaying, currentStep, steps]);
-
-  const getBarState = (index: number): BarState => {
-    if (steps.length === 0) return 'default';
-    const step = steps[currentStep];
-    if (!step) return 'default';
-    if (step.sorted.includes(index)) return 'sorted';
-    if (step.swapping.includes(index)) return 'swapping';
-    if (step.comparing.includes(index)) return 'comparing';
-    return 'default';
   };
+
+  const maxVal = Math.max(...array, 100);
 
   return (
-    <main className="min-h-screen bg-slate-950 text-slate-100 p-4 sm:p-8 flex flex-col justify-between">
-      <header className="flex items-center justify-between border-b border-slate-800 pb-6 mb-8 max-w-6xl mx-auto w-full">
-        <div className="flex items-center gap-4">
-          <Link href="/" className="p-2 rounded-lg bg-slate-900 border border-slate-800 hover:bg-slate-800 transition-colors">
-            <ArrowLeft className="w-5 h-5" />
-          </Link>
-          <div>
-            <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-              <span>Interactive Sorting Playground</span>
-              <Zap className="w-5 h-5 text-amber-400 fill-amber-400" />
-            </h1>
-            <p className="text-sm text-slate-400">Terhubung secara Real-Time dengan Backend Laravel API</p>
-          </div>
-        </div>
-
-        <div className="flex gap-2 bg-slate-900 p-1.5 rounded-xl border border-slate-800 text-sm">
-          {['bubble', 'selection', 'insertion', 'quick'].map((algo) => (
-            <button
-              key={algo}
-              disabled={isLoading}
-              onClick={() => { setAlgorithm(algo); setSteps([]); setIsPlaying(false); }}
-              className={`px-4 py-2 rounded-lg capitalize font-medium transition-all ${
-                algorithm === algo ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30' : 'text-slate-400 hover:text-white'
-              } ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+    <div className="min-h-screen bg-dicoding-bg flex flex-col justify-between">
+      {/* Top Navbar Lab */}
+      <header className="bg-white border-b border-dicoding-border px-6 py-4 shadow-sm sticky top-0 z-10">
+        <div className="max-w-6xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <Link 
+              href="/" 
+              className="text-sm font-semibold text-dicoding-blue hover:underline bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-100"
             >
-              {algo} sort
+              ← Kembali ke Katalog
+            </Link>
+            <h1 className="text-xl font-extrabold text-dicoding-navy flex items-center gap-2">
+              <span>🛠️</span> Interactive Algorithm Lab
+            </h1>
+          </div>
+
+          {/* Control Toolbar */}
+          <div className="flex flex-wrap items-center gap-3">
+            {/* Dropdown Algoritma */}
+            <select
+              value={algorithm}
+              onChange={(e) => setAlgorithm(e.target.value)}
+              disabled={isPlaying}
+              className="bg-slate-50 border border-dicoding-border text-dicoding-navy text-sm font-semibold rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-dicoding-blue disabled:opacity-50"
+            >
+              <option value="bubble">Bubble Sort (O(n²))</option>
+              <option value="selection">Selection Sort (O(n²))</option>
+              <option value="insertion">Insertion Sort (O(n²))</option>
+            </select>
+
+            {/* Fitur Baru: Slider Kecepatan */}
+            <div className="flex items-center gap-2 bg-slate-50 border border-dicoding-border px-3 py-1.5 rounded-lg">
+              <span className="text-xs font-bold text-slate-500">⏱️ Tempo:</span>
+              <input
+                type="range"
+                min="50"
+                max="1000"
+                step="50"
+                value={speed}
+                onChange={(e) => setSpeed(Number(e.target.value))}
+                disabled={isPlaying}
+                className="w-24 accent-dicoding-blue cursor-pointer disabled:opacity-50"
+              />
+              <span className="text-xs font-mono font-bold text-dicoding-blue w-12 text-right">
+                {speed}ms
+              </span>
+            </div>
+
+            {/* Tombol Acak Array */}
+            <button
+              onClick={generateRandomArray}
+              disabled={isPlaying}
+              className="px-4 py-2 bg-white border border-dicoding-border text-dicoding-navy hover:bg-slate-50 font-semibold text-sm rounded-lg transition-all disabled:opacity-50 shadow-sm"
+            >
+              🔄 Acak Array
             </button>
-          ))}
+
+            {/* Tombol Mulai Visualisasi */}
+            <button
+              onClick={handleSimulate}
+              disabled={isPlaying}
+              className="px-6 py-2 bg-dicoding-blue hover:bg-dicoding-blue-hover text-white font-semibold text-sm rounded-lg transition-all shadow-md disabled:opacity-50 flex items-center gap-2"
+            >
+              {isPlaying ? "⏳ Memutar..." : "▶ Visualisasikan"}
+            </button>
+          </div>
         </div>
       </header>
 
-      <section className="flex-1 max-w-5xl mx-auto w-full bg-slate-900/40 border border-slate-800/80 rounded-3xl p-6 sm:p-12 flex flex-col justify-between min-h-100 shadow-2xl relative overflow-hidden backdrop-blur-sm">
-        <div className="bg-slate-900/90 border border-slate-800 px-6 py-4 rounded-2xl mb-8 max-w-xl mx-auto text-center shadow-lg">
-          <span className="text-xs font-mono uppercase tracking-wider text-blue-400 block mb-1">
-            Status Animasi {steps.length > 0 ? `(Langkah ${currentStep + 1} / ${steps.length})` : ''}
-          </span>
-          <p className="text-base sm:text-lg font-medium text-slate-200 min-h-7 flex items-center justify-center gap-2">
-            {isLoading && <Loader2 className="w-4 h-4 animate-spin text-blue-400" />}
-            <span>{explanation}</span>
-          </p>
+      {/* Main Workspace Area */}
+      <main className="max-w-6xl mx-auto w-full px-6 py-8 flex-1 flex flex-col gap-8">
+        {/* Kanvas Visualisasi Balok */}
+        <div className="bg-white rounded-2xl border border-dicoding-border p-6 md:p-10 shadow-sm flex flex-col justify-between min-h-[420px]">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-4 mb-6">
+            <div className="flex items-center gap-4 text-xs font-bold text-slate-600">
+              <span className="flex items-center gap-1.5">
+                <span className="w-3 h-3 rounded-full bg-dicoding-blue inline-block"></span> Belum Terurut
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="w-3 h-3 rounded-full bg-amber-400 inline-block"></span> Sedang Dibandingkan
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="w-3 h-3 rounded-full bg-rose-500 inline-block"></span> Bertukar Posisi (Swap)
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="w-3 h-3 rounded-full bg-emerald-500 inline-block"></span> Posisi Terurut
+              </span>
+            </div>
+            <div className="text-xs font-mono font-semibold text-slate-400">
+              Total Elemen: {array.length}
+            </div>
+          </div>
+
+          {/* Render Balok Array */}
+          <div className="flex items-end justify-center gap-2 md:gap-4 flex-1 px-4 h-full">
+            {array.map((val, idx) => (
+              <ArrayBar
+                key={idx}
+                value={val}
+                maxValue={maxVal}
+                isComparing={comparingIdx.includes(idx)}
+                isSwapped={swappedIdx.includes(idx)}
+                isSorted={sortedIdx.includes(idx)}
+              />
+            ))}
+          </div>
         </div>
 
-        <div className="flex items-end justify-center gap-2 sm:gap-4 h-65 w-full px-4 pt-8">
-          {array.map((val, idx) => (
-            <ArrayBar key={idx} value={val} maxValue={maxValue} state={getBarState(idx)} />
-          ))}
+        {/* Panel Log Eksekusi IDE/Terminal */}
+        <div className="bg-slate-900 rounded-2xl border border-slate-800 p-6 shadow-lg flex flex-col h-64">
+          <div className="flex items-center justify-between border-b border-slate-800 pb-3 mb-3">
+            <span className="text-xs font-bold text-slate-400 flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+              LIVE EXECUTION TERMINAL LOG (RAILWAY CLOUD STREAM)
+            </span>
+            <button 
+              onClick={() => setLogs(["💬 Terminal log dibersihkan."])}
+              className="text-xs text-slate-500 hover:text-slate-300 underline font-mono"
+            >
+              Clear Log
+            </button>
+          </div>
+
+          {/* Area Output Log */}
+          <div 
+            ref={terminalRef} 
+            className="flex-1 overflow-y-auto font-mono text-xs space-y-1.5 pr-2 scrollbar-thin scrollbar-thumb-slate-700"
+          >
+            {logs.map((log, index) => (
+              <div 
+                key={index} 
+                className={
+                  log.includes("❌") ? "text-rose-400 font-semibold" :
+                  log.includes("🎯") ? "text-emerald-400 font-bold" :
+                  log.includes("🚀") ? "text-cyan-400 font-semibold" :
+                  log.includes("🔄 Swap") ? "text-amber-300" : "text-slate-300"
+                }
+              >
+                <span className="text-slate-600 mr-2">[{new Date().toLocaleTimeString('id-ID')}]</span>
+                {log}
+              </div>
+            ))}
+          </div>
         </div>
-      </section>
+      </main>
 
-      <footer className="max-w-xl mx-auto w-full mt-8 bg-slate-900 border border-slate-800 p-4 rounded-2xl flex items-center justify-between gap-4 shadow-xl">
-        <button
-          onClick={generateRandomArray}
-          disabled={isLoading}
-          className="flex items-center gap-2 px-5 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-sm transition-all border border-slate-700 disabled:opacity-50"
-        >
-          <Shuffle className="w-4 h-4 text-blue-400" />
-          <span>Acak Angka</span>
-        </button>
-
-        <button
-          onClick={handleStart}
-          disabled={isLoading}
-          className={`flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold text-sm transition-all shadow-lg disabled:opacity-50 ${
-            isPlaying 
-              ? 'bg-amber-600 hover:bg-amber-500 text-white shadow-amber-600/30' 
-              : 'bg-blue-600 hover:bg-blue-500 text-white shadow-blue-600/30'
-          }`}
-        >
-          {isLoading ? (
-            <>
-              <Loader2 className="w-4 h-4 animate-spin" />
-              <span>Mengambil Data API...</span>
-            </>
-          ) : (
-            <>
-              <Play className={`w-4 h-4 ${isPlaying ? 'animate-pulse' : ''}`} />
-              <span>{isPlaying ? 'Jeda Animasi (Pause)' : 'Mulai Visualisasi (Play)'}</span>
-            </>
-          )}
-        </button>
-
-        <button
-          onClick={() => { setIsPlaying(false); setCurrentStep(0); if (steps.length > 0) setArray(steps[0].array); }}
-          disabled={isLoading}
-          className="p-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white transition-all border border-slate-700 disabled:opacity-50"
-          title="Reset ke Awal"
-        >
-          <RotateCcw className="w-4 h-4" />
-        </button>
+      {/* Footer Minimalis */}
+      <footer className="py-6 text-center text-xs text-dicoding-text-light border-t border-dicoding-border mt-12 bg-white">
+        Interactive Sorting Playground Full-Stack Architecture • Powered by Next.js & Laravel Railway Cloud
       </footer>
-    </main>
+    </div>
   );
 }

@@ -1,41 +1,47 @@
-'use client';
+﻿import React from 'react';
 
 interface ArrayBarProps {
   value: number;
   maxValue: number;
-  state: 'default' | 'comparing' | 'swapping' | 'sorted';
+  isComparing?: boolean;
+  isSwapped?: boolean;
+  isSorted?: boolean;
 }
 
-export default function ArrayBar({ value, maxValue, state }: ArrayBarProps) {
-  // Hitung persentase tinggi balok berdasarkan nilai maksimum di dalam array
-  const heightPercentage = Math.max((value / maxValue) * 100, 8); // Minimal 8% agar angka kecil tetap terlihat
+export default function ArrayBar({
+  value,
+  maxValue,
+  isComparing = false,
+  isSwapped = false,
+  isSorted = false,
+}: ArrayBarProps) {
+  // Menentukan persentase tinggi balok relatif terhadap nilai maksimal
+  const heightPercentage = Math.max(15, Math.round((value / maxValue) * 100));
 
-  // Tentukan warna balok berdasarkan status animasi saat ini
-  const getBarColor = () => {
-    switch (state) {
-      case 'comparing':
-        return 'bg-amber-400 shadow-[0_0_15px_rgba(251,191,36,0.6)]'; // Kuning menyala
-      case 'swapping':
-        return 'bg-rose-500 shadow-[0_0_15px_rgba(244,63,94,0.6)]';   // Merah menyala
-      case 'sorted':
-        return 'bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.5)]'; // Hijau
-      default:
-        return 'bg-blue-600 hover:bg-blue-500';                       // Biru standar
-    }
-  };
+  // Menentukan warna balok berdasarkan status animasi
+  let barColor = 'bg-dicoding-blue group-hover:bg-dicoding-blue-hover';
+  if (isSorted) {
+    barColor = 'bg-emerald-500 shadow-emerald-200';
+  } else if (isSwapped) {
+    barColor = 'bg-rose-500 shadow-rose-200';
+  } else if (isComparing) {
+    barColor = 'bg-amber-400 shadow-amber-200';
+  }
 
   return (
-    <div className="flex flex-col items-center gap-2 flex-1 h-full justify-end group">
+    <div className="flex flex-col items-center gap-2 flex-1 max-w-[40px] group">
       {/* Label Angka di Atas Balok */}
-      <span className="text-xs font-mono font-bold text-slate-400 group-hover:text-white transition-colors">
+      <span className="text-xs font-mono font-bold text-dicoding-navy transition-all duration-200">
         {value}
       </span>
 
-      {/* Balok Animasi */}
-      <div
-        style={{ height: `${heightPercentage}%` }}
-        className={`w-full max-w-10 rounded-t-lg transition-all duration-200 ease-in-out ${getBarColor()}`}
-      />
+      {/* Balok Grafis */}
+      <div className="w-full bg-slate-200 rounded-t-lg h-64 flex items-end justify-center p-1 shadow-inner overflow-hidden">
+        <div
+          style={{ height: `${heightPercentage}%` }}
+          className={`w-full rounded-t-md transition-all duration-200 shadow-md ${barColor}`}
+        />
+      </div>
     </div>
   );
 }
