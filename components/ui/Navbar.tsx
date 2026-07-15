@@ -44,7 +44,7 @@ export default function Navbar() {
             href="/playground"
             className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg shadow-sm transition-all"
           >
-            Buka Simulator
+            Mulai Simulasi
           </Link>
         </div>
 

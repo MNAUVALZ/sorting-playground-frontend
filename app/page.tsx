@@ -124,7 +124,7 @@ export default function Home() {
                 href="/playground" 
                 className="inline-flex items-center gap-2 px-8 py-4 bg-blue-600 hover:bg-blue-500 text-white font-extrabold rounded-xl shadow-[0_0_20px_rgba(37,99,235,0.4)] transition-all hover:-translate-y-1 hover:shadow-[0_0_30px_rgba(37,99,235,0.6)]"
               >
-                Buka Simulator Sekarang
+                Mulai Simulasi Sekarang
               </Link>
             </div>
           </div>
@@ -136,3 +136,4 @@ export default function Home() {
     </div>
   );
 }
+

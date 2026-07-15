@@ -76,8 +76,9 @@ export default function PlaygroundPage() {
   const [currentRaceIdx, setCurrentRaceIdx] = useState<number>(0);
   const [maxRaceFrames, setMaxRaceFrames] = useState<number>(0);
   const [isRaceSorted, setIsRaceSorted] = useState<boolean>(false);
-  const [activeLogTab, setActiveLogTab] = useState<string>('general');
-  const [activeTableTab, setActiveTableTab] = useState<string>('quick'); // FITUR BARU: Tab untuk Tabel Bawah
+  
+  // Tab di terminal log komparasi DIHAPUS (Log gabungan langsung ditampilkan)
+  const [activeTableTab, setActiveTableTab] = useState<string>('quick');
   const [generalLogs, setGeneralLogs] = useState<LogItem[]>([
     { id: 0, type: 'INFO', text: "Pilih minimal 2 algoritma yang ingin diadu, lalu tekan Putar Komparasi." }
   ]);
@@ -90,7 +91,6 @@ export default function PlaygroundPage() {
     { id: 'quick', name: 'Quick Sort', complexity: 'O(n log n)', color: 'bg-purple-600' },
   ];
 
-  // Sinkronisasi tab tabel dengan pilihan algoritma
   useEffect(() => {
     if (selectedAlgos.length > 0 && !selectedAlgos.includes(activeTableTab)) {
       setActiveTableTab(selectedAlgos[0]);
@@ -260,7 +260,6 @@ export default function PlaygroundPage() {
       quickHelper(0, n - 1);
     }
     
-    // Fitur Baru: Otomatis tambahkan log "SORTED" di akhir array frame agar ter-render seragam
     frames.push({
       array: [...arr], comparing: [], swappedIdx: [], logType: 'SORTED',
       logMsg: `Pengurutan selesai! (${swaps} swap)`,
@@ -320,13 +319,21 @@ export default function PlaygroundPage() {
         setCurrentRaceIdx(nextIdx);
         if (nextIdx >= maxRaceFrames - 1) {
           setIsPlaying(false); setIsRaceSorted(true); setAutoScroll(false);
+          addGeneralLog('SORTED', `Seluruh kompetisi algoritma selesai!`);
+        } else {
+          selectedAlgos.forEach(id => {
+            const f = raceFramesMap[id];
+            if (f && nextIdx === f.length - 1) {
+              const algoName = allAlgos.find(a => a.id === id)?.name || id;
+              addGeneralLog('SORTED', `[FINISH] ${algoName} selesai!`);
+            }
+          });
         }
       }, delayMs);
     }
     return () => clearTimeout(timer);
-  }, [isPlaying, currentRaceIdx, maxRaceFrames, speedMultiplier, labMode]);
+  }, [isPlaying, currentRaceIdx, maxRaceFrames, speedMultiplier, labMode, raceFramesMap, selectedAlgos]);
 
-  // --- KONTROL TOMBOL MEDIA ---
   const handlePlayPause = () => {
     if (labMode === 'single') {
       if (isSorted) return;
@@ -432,14 +439,15 @@ export default function PlaygroundPage() {
 
   const renderLogItem = (log: LogItem) => (
     <div key={log.id} className="flex items-start gap-2.5 leading-relaxed p-1.5 hover:bg-slate-800/30 rounded border border-transparent transition-colors">
-      <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold border shrink-0 text-center min-w-[65px] ${getBadgeStyle(log.type)}`}>{log.type}</span>
+      <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold border shrink-0 text-center min-w-[65px] ${getBadgeStyle(log.type)}`}>
+        {log.type}
+      </span>
       <span className={log.type === 'SWAP' ? "text-rose-200 font-medium text-xs" : log.type === 'SORTED' ? "text-emerald-300 font-bold text-xs" : log.type === 'PIVOT' ? "text-purple-200 font-medium text-xs" : "text-slate-300 text-xs"}>
         {log.text}
       </span>
     </div>
   );
 
-  // --- DATA TABEL TRACE BAWAH ---
   const traceFrames = labMode === 'single'
     ? allFrames.slice(0, currentFrameIdx + 1)
     : (raceFramesMap[activeTableTab] || []).slice(0, currentRaceIdx + 1);
@@ -570,7 +578,7 @@ export default function PlaygroundPage() {
           </div>
         </div>
 
-        {/* KOLOM KANAN: TERMINAL LOG BEBAS SCROLL */}
+        {/* KOLOM KANAN: TERMINAL LOG MURNI TANPA TAB ALGORITMA */}
         <div className="xl:col-span-1 bg-[#0d1117] rounded-2xl border border-slate-800 p-5 shadow-xl flex flex-col h-[650px]">
           <div className="flex items-center justify-between border-b border-slate-800 pb-3 mb-3">
             <span className="text-xs font-bold text-slate-300 flex items-center gap-2 tracking-widest uppercase">
@@ -579,17 +587,6 @@ export default function PlaygroundPage() {
             </span>
             <button onClick={() => { labMode==='single'?setLogs([]):setGeneralLogs([]) }} className="text-xs text-slate-500 hover:text-white transition-colors font-mono">Clear</button>
           </div>
-
-          {labMode === 'race' && (
-            <div className="flex flex-wrap gap-1 mb-3">
-              <button onClick={() => setActiveLogTab('general')} className={`px-2 py-1 rounded text-[10px] font-bold transition-all ${activeLogTab === 'general' ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-400'}`}>Balapan (Semua)</button>
-              {selectedAlgos.map((id) => (
-                <button key={id} onClick={() => setActiveLogTab(id)} className={`px-2 py-1 rounded text-[10px] font-bold transition-all ${activeLogTab === id ? 'bg-amber-500 text-slate-950 font-extrabold' : 'bg-slate-800 text-slate-400'}`}>
-                  {allAlgos.find(a => a.id === id)?.name.replace(' Sort', '')}
-                </button>
-              ))}
-            </div>
-          )}
           
           <div className="text-[10px] font-mono text-slate-500 pb-2 border-b border-slate-800/50 mb-3 flex justify-between items-center">
             <span>Auto-Scroll: <button onClick={()=>setAutoScroll(!autoScroll)} className={`ml-1 font-bold ${autoScroll ? 'text-blue-400' : 'text-slate-400'}`}>{autoScroll ? 'ON' : 'OFF'}</button></span>
@@ -603,15 +600,15 @@ export default function PlaygroundPage() {
           >
             {labMode === 'single' ? (
               logs.map(renderLogItem)
-            ) : activeLogTab === 'general' ? (
+            ) : (
               <>
                 {generalLogs.map(renderLogItem)}
-                {/* FITUR BARU: FULL INTERLACED LOGS DI TAB UMUM */}
+                {/* MENAMPILKAN SELURUH LOG GABUNGAN SECARA BERSAMAAN */}
                 {Array.from({ length: currentRaceIdx + 1 }).map((_, i) => (
                   <React.Fragment key={`step-${i}`}>
                     {selectedAlgos.map(id => {
                       const f = raceFramesMap[id];
-                      if (!f || i >= f.length || i === 0) return null; // skip initial state to avoid spam
+                      if (!f || i >= f.length || i === 0) return null; 
                       const frame = f[i];
                       const algoName = allAlgos.find(a => a.id === id)?.name.replace(' Sort', '') || id;
                       return (
@@ -627,19 +624,11 @@ export default function PlaygroundPage() {
                   </React.Fragment>
                 ))}
               </>
-            ) : (
-              (raceFramesMap[activeLogTab] || []).slice(0, currentRaceIdx + 1).map((f, idx) => (
-                <div key={idx} className="flex items-start gap-2.5 leading-relaxed p-1.5 hover:bg-slate-800/30 rounded border border-transparent transition-colors">
-                  <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold border shrink-0 text-center min-w-[65px] ${getBadgeStyle(f.logType)}`}>{f.logType}</span>
-                  <span className={f.logType === 'SWAP' ? "text-rose-200 font-medium text-xs" : f.logType === 'SORTED' ? "text-emerald-300 font-bold text-xs" : f.logType === 'PIVOT' ? "text-purple-200 font-medium text-xs" : "text-slate-300 text-xs"}>{f.logMsg}</span>
-                </div>
-              ))
             )}
           </div>
         </div>
       </main>
 
-      {/* TABEL FULL DATA TRACE */}
       <section className="max-w-6xl mx-auto w-full px-6 pb-16">
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
           <div className="bg-slate-900 px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800">
@@ -647,7 +636,6 @@ export default function PlaygroundPage() {
               <span>📋</span> Tabel Riwayat Data Penuh (Trace Table)
             </h3>
             
-            {/* FITUR BARU: TOMBOL TAB ALGORITMA DI TABEL BAWAH */}
             {labMode === 'race' && (
               <div className="flex items-center gap-3">
                 <span className="text-xs text-slate-400 font-bold uppercase tracking-wider hidden sm:block">Data Algoritma:</span>

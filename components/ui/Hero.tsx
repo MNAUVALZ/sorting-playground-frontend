@@ -4,11 +4,9 @@ import Link from 'next/link';
 export default function Hero() {
   return (
     <section className="relative pt-20 pb-24 lg:pt-28 lg:pb-32 px-6 overflow-hidden bg-slate-50 border-b border-slate-200">
-      {/* Background Grid Pattern (Vercel/Stripe Style) */}
       <div className="absolute inset-0 bg-[linear-gradient(to_right,#e2e8f0_1px,transparent_1px),linear-gradient(to_bottom,#e2e8f0_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] opacity-40"></div>
       
       <div className="max-w-6xl mx-auto flex flex-col lg:flex-row items-center gap-16 relative z-10">
-        {/* Kolom Kiri: Copywriting & CTA Utama */}
         <div className="flex-1 space-y-8 text-center lg:text-left">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-white text-slate-800 rounded-full text-xs font-bold tracking-wide border border-slate-200 shadow-sm">
             <span className="w-2 h-2 rounded-full bg-blue-600 animate-pulse"></span>
@@ -28,7 +26,7 @@ export default function Hero() {
               href="/playground" 
               className="w-full sm:w-auto px-8 py-3.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold text-sm transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5 flex items-center justify-center gap-2"
             >
-              <span>Buka Simulator</span>
+              <span>Mulai Simulasi</span>
               <span>→</span>
             </Link>
             <Link 
@@ -40,11 +38,9 @@ export default function Hero() {
           </div>
         </div>
 
-        {/* Kolom Kanan: Ilustrasi Mockup Minimalis */}
         <div className="flex-1 w-full max-w-lg lg:max-w-none">
           <div className="bg-slate-950 rounded-2xl border border-slate-800 p-2 shadow-2xl transform lg:rotate-2 hover:rotate-0 transition-transform duration-500">
             <div className="bg-slate-900 rounded-xl overflow-hidden border border-slate-800/80">
-              {/* Window Topbar */}
               <div className="flex items-center justify-between px-4 py-3 border-b border-slate-800 bg-slate-900/50">
                 <div className="flex items-center gap-2">
                   <span className="w-3 h-3 rounded-full bg-rose-500"></span>
@@ -54,7 +50,6 @@ export default function Hero() {
                 <span className="text-[10px] font-mono font-bold text-slate-500 tracking-wider">LIVE_SIMULATOR.EXE</span>
               </div>
 
-              {/* Balok Visualisasi */}
               <div className="p-6 h-56 flex items-end justify-between gap-2.5 relative bg-gradient-to-b from-slate-900 to-slate-950">
                 <div className="w-full bg-slate-700 rounded-t h-[40%]"></div>
                 <div className="w-full bg-slate-700 rounded-t h-[70%]"></div>
@@ -64,7 +59,6 @@ export default function Hero() {
                 <div className="w-full bg-emerald-500 rounded-t h-[100%]"></div>
               </div>
 
-              {/* Terminal Log Output */}
               <div className="bg-slate-950 p-4 border-t border-slate-800 font-mono text-xs">
                 <div className="flex items-center gap-2 text-slate-400 mb-1.5">
                   <span className="text-slate-600">[10:42:01]</span>
