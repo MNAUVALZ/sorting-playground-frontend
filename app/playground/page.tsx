@@ -37,7 +37,6 @@ interface BenchmarkResult {
   compares: number;
   swaps: number;
   timeMs: number;
-  detailedLogs: string[];
 }
 
 interface RaceTrack {
@@ -78,6 +77,7 @@ export default function PlaygroundPage() {
   const [maxRaceFrames, setMaxRaceFrames] = useState<number>(0);
   const [isRaceSorted, setIsRaceSorted] = useState<boolean>(false);
   const [activeLogTab, setActiveLogTab] = useState<string>('general');
+  const [activeTableTab, setActiveTableTab] = useState<string>('quick'); // FITUR BARU: Tab untuk Tabel Bawah
   const [generalLogs, setGeneralLogs] = useState<LogItem[]>([
     { id: 0, type: 'INFO', text: "Pilih minimal 2 algoritma yang ingin diadu, lalu tekan Putar Komparasi." }
   ]);
@@ -90,7 +90,13 @@ export default function PlaygroundPage() {
     { id: 'quick', name: 'Quick Sort', complexity: 'O(n log n)', color: 'bg-purple-600' },
   ];
 
-  // Efek Scroll Otomatis (Akan mati jika user scroll manual)
+  // Sinkronisasi tab tabel dengan pilihan algoritma
+  useEffect(() => {
+    if (selectedAlgos.length > 0 && !selectedAlgos.includes(activeTableTab)) {
+      setActiveTableTab(selectedAlgos[0]);
+    }
+  }, [selectedAlgos, activeTableTab]);
+
   const handleManualScroll = () => { if (autoScroll) setAutoScroll(false); };
 
   useEffect(() => {
@@ -253,6 +259,14 @@ export default function PlaygroundPage() {
       };
       quickHelper(0, n - 1);
     }
+    
+    // Fitur Baru: Otomatis tambahkan log "SORTED" di akhir array frame agar ter-render seragam
+    frames.push({
+      array: [...arr], comparing: [], swappedIdx: [], logType: 'SORTED',
+      logMsg: `Pengurutan selesai! (${swaps} swap)`,
+      stepNum: stepNum + 1, totalCompares: compares, totalSwaps: swaps
+    });
+
     return frames;
   };
 
@@ -275,7 +289,7 @@ export default function PlaygroundPage() {
     setMaxRaceFrames(maxLen);
   }, [selectedAlgos, raceArray]);
 
-  // --- PEMUTAR OTOMATIS ---
+  // --- PEMUTAR OTOMATIS TUNGGAL & KOMPARASI ---
   useEffect(() => {
     let timer: NodeJS.Timeout;
     if (isPlaying && labMode === 'single' && currentFrameIdx < allFrames.length - 1) {
@@ -285,11 +299,12 @@ export default function PlaygroundPage() {
         setCurrentFrameIdx(nextIdx);
         const frame = allFrames[nextIdx];
         setArray(frame.array);
-        addLog(frame.logType, frame.logMsg);
+        
+        if (frame.logType !== 'SORTED') addLog(frame.logType, frame.logMsg);
         
         if (nextIdx >= allFrames.length - 1) {
           setIsPlaying(false); setIsSorted(true); setAutoScroll(false);
-          addLog('SORTED', `Pengurutan selesai dalam ${allFrames.length - 1} langkah!`);
+          addLog('SORTED', `Selesai dalam ${allFrames.length - 1} langkah!`);
         }
       }, delayMs);
     }
@@ -303,23 +318,13 @@ export default function PlaygroundPage() {
       timer = setTimeout(() => {
         const nextIdx = currentRaceIdx + 1;
         setCurrentRaceIdx(nextIdx);
-        
         if (nextIdx >= maxRaceFrames - 1) {
           setIsPlaying(false); setIsRaceSorted(true); setAutoScroll(false);
-          addGeneralLog('SORTED', `Seluruh kompetisi algoritma selesai!`);
-        } else {
-          selectedAlgos.forEach(id => {
-            const f = raceFramesMap[id];
-            if (f && nextIdx === f.length - 1) {
-              const algoName = allAlgos.find(a => a.id === id)?.name || id;
-              addGeneralLog('SORTED', `[FINISH] ${algoName} selesai!`);
-            }
-          });
         }
       }, delayMs);
     }
     return () => clearTimeout(timer);
-  }, [isPlaying, currentRaceIdx, maxRaceFrames, speedMultiplier, labMode, raceFramesMap, selectedAlgos]);
+  }, [isPlaying, currentRaceIdx, maxRaceFrames, speedMultiplier, labMode]);
 
   // --- KONTROL TOMBOL MEDIA ---
   const handlePlayPause = () => {
@@ -341,13 +346,13 @@ export default function PlaygroundPage() {
       if (isSorted || currentFrameIdx >= allFrames.length - 1) return;
       const nextIdx = currentFrameIdx + 1;
       setCurrentFrameIdx(nextIdx); setArray(allFrames[nextIdx].array);
-      addLog(allFrames[nextIdx].logType, allFrames[nextIdx].logMsg);
+      if (allFrames[nextIdx].logType !== 'SORTED') addLog(allFrames[nextIdx].logType, allFrames[nextIdx].logMsg);
       if (nextIdx === allFrames.length - 1) { setIsSorted(true); addLog('SORTED', "Selesai."); setAutoScroll(false); }
     } else {
       if (isRaceSorted || currentRaceIdx >= maxRaceFrames - 1) return;
       const nextIdx = currentRaceIdx + 1;
       setCurrentRaceIdx(nextIdx);
-      if (nextIdx === maxRaceFrames - 1) { setIsRaceSorted(true); addGeneralLog('SORTED', "Selesai."); setAutoScroll(false); }
+      if (nextIdx === maxRaceFrames - 1) { setIsRaceSorted(true); setAutoScroll(false); }
     }
   };
 
@@ -356,14 +361,12 @@ export default function PlaygroundPage() {
     setAutoScroll(true);
     if (labMode === 'single') {
       if (currentFrameIdx <= 0) return;
-      setIsSorted(false);
-      const prevIdx = currentFrameIdx - 1;
+      setIsSorted(false); const prevIdx = currentFrameIdx - 1;
       setCurrentFrameIdx(prevIdx); setArray(allFrames[prevIdx].array);
       addLog('INFO', `Mundur ke langkah #${allFrames[prevIdx].stepNum}`);
     } else {
       if (currentRaceIdx <= 0) return;
-      setIsRaceSorted(false);
-      const prevIdx = currentRaceIdx - 1;
+      setIsRaceSorted(false); const prevIdx = currentRaceIdx - 1;
       setCurrentRaceIdx(prevIdx);
       addGeneralLog('INFO', `Mundur ke langkah serentak #${prevIdx}`);
     }
@@ -372,11 +375,9 @@ export default function PlaygroundPage() {
   const handleReset = () => {
     setIsPlaying(false); setAutoScroll(true);
     if (labMode === 'single') {
-      setIsSorted(false); setCurrentFrameIdx(0); setArray([...initialArray]);
-      addLog('INFO', "Simulasi direset.");
+      setIsSorted(false); setCurrentFrameIdx(0); setArray([...initialArray]); addLog('INFO', "Simulasi direset.");
     } else {
-      setIsRaceSorted(false); setCurrentRaceIdx(0);
-      addGeneralLog('INFO', "Komparasi direset.");
+      setIsRaceSorted(false); setCurrentRaceIdx(0); addGeneralLog('INFO', "Komparasi direset.");
     }
   };
 
@@ -420,7 +421,6 @@ export default function PlaygroundPage() {
     return { id, name: algoObj.name, complexity: algoObj.complexity, steps: f.length - 1, compares: lastF.totalCompares, swaps: lastF.totalSwaps };
   }).sort((a, b) => (a.swaps + a.steps) - (b.swaps + b.steps));
 
-  // Fungsi Helper Desain Lencana Log
   const getBadgeStyle = (type: string) => {
     if (type === 'PIVOT') return "bg-purple-900/60 text-purple-300 border-purple-700";
     if (type === 'COMPARE') return "bg-amber-900/60 text-amber-300 border-amber-700";
@@ -432,27 +432,22 @@ export default function PlaygroundPage() {
 
   const renderLogItem = (log: LogItem) => (
     <div key={log.id} className="flex items-start gap-2.5 leading-relaxed p-1.5 hover:bg-slate-800/30 rounded border border-transparent transition-colors">
-      <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold border shrink-0 text-center min-w-[65px] ${getBadgeStyle(log.type)}`}>
-        {log.type}
-      </span>
+      <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold border shrink-0 text-center min-w-[65px] ${getBadgeStyle(log.type)}`}>{log.type}</span>
       <span className={log.type === 'SWAP' ? "text-rose-200 font-medium text-xs" : log.type === 'SORTED' ? "text-emerald-300 font-bold text-xs" : log.type === 'PIVOT' ? "text-purple-200 font-medium text-xs" : "text-slate-300 text-xs"}>
         {log.text}
       </span>
     </div>
   );
 
-  // --- DATA UNTUK TABEL FULL DATA LOG ---
+  // --- DATA TABEL TRACE BAWAH ---
   const traceFrames = labMode === 'single'
     ? allFrames.slice(0, currentFrameIdx + 1)
-    : (activeLogTab !== 'general' && raceFramesMap[activeLogTab])
-      ? raceFramesMap[activeLogTab].slice(0, currentRaceIdx + 1)
-      : [];
+    : (raceFramesMap[activeTableTab] || []).slice(0, currentRaceIdx + 1);
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col justify-between">
       <Navbar />
 
-      {/* HEADER TABS MODE */}
       <div className="bg-slate-900 text-white py-3 px-6 border-b border-slate-800 shadow-md">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="font-extrabold text-sm tracking-wide text-slate-200 uppercase">
@@ -470,9 +465,7 @@ export default function PlaygroundPage() {
       </div>
 
       <main className="max-w-6xl mx-auto w-full px-6 py-8 flex-1 grid grid-cols-1 xl:grid-cols-3 gap-6 items-start">
-        {/* KOLOM KIRI (STUDIO DASHBOARD) */}
         <div className="xl:col-span-2 flex flex-col gap-4">
-          
           <div className="bg-white rounded-t-2xl border border-slate-200 shadow-sm overflow-hidden">
             <div className="flex flex-wrap items-center bg-slate-100 border-b border-slate-200 px-2 pt-2 gap-1">
               {labMode === 'single' ? (
@@ -502,7 +495,6 @@ export default function PlaygroundPage() {
                   <input type="range" min="1" max="10" step="1" value={speedMultiplier} onChange={(e) => setSpeedMultiplier(Number(e.target.value))} className="accent-emerald-500 cursor-pointer" />
                 </div>
               </div>
-
               <div className="flex items-center gap-2">
                 <button onClick={generateRandom} disabled={isPlaying} className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-lg transition-all">Acak Baru</button>
                 <form onSubmit={handleApplyCustom} className="flex items-center gap-2">
@@ -546,7 +538,6 @@ export default function PlaygroundPage() {
                 })}
               </div>
             )}
-
             <div className="mt-6 text-center h-8">
               {labMode === 'single' ? (
                 <span className={`text-sm font-bold px-4 py-2 rounded-full border ${isSorted ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : currentFrame.swappedIdx.length > 0 ? 'bg-rose-50 text-rose-700 border-rose-200' : currentFrame.comparing.length > 0 ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-slate-100 text-slate-600 border-slate-200'}`}>
@@ -562,34 +553,17 @@ export default function PlaygroundPage() {
 
           <div className="bg-slate-900 rounded-2xl p-4 flex items-center justify-between shadow-lg text-white">
             <div className="flex items-center gap-4">
-              <button onClick={handlePrevStep} disabled={isPlaying || (labMode==='single' ? currentFrameIdx<=0 : currentRaceIdx<=0)} className="w-10 h-10 flex items-center justify-center rounded-full bg-slate-800 hover:bg-slate-700 disabled:opacity-50 transition-colors text-lg">
-                ⏮
-              </button>
-              <button onClick={handlePlayPause} disabled={labMode==='single' ? isSorted : isRaceSorted} className={`w-14 h-14 flex items-center justify-center rounded-full text-xl shadow-lg transition-transform hover:scale-105 ${isPlaying ? 'bg-amber-500 text-slate-900' : 'bg-blue-600 text-white'}`}>
-                {isPlaying ? '⏸' : '▶'}
-              </button>
-              <button onClick={handleNextStep} disabled={isPlaying || (labMode==='single' ? isSorted||currentFrameIdx>=allFrames.length-1 : isRaceSorted||currentRaceIdx>=maxRaceFrames-1)} className="w-10 h-10 flex items-center justify-center rounded-full bg-slate-800 hover:bg-slate-700 disabled:opacity-50 transition-colors text-lg">
-                ⏭
-              </button>
-              <button onClick={handleReset} className="ml-4 px-4 py-2 rounded-lg bg-slate-800 hover:bg-rose-900/50 text-slate-300 hover:text-rose-400 font-bold text-xs transition-colors">
-                Reset Ulang
-              </button>
+              <button onClick={handlePrevStep} disabled={isPlaying || (labMode==='single' ? currentFrameIdx<=0 : currentRaceIdx<=0)} className="w-10 h-10 flex items-center justify-center rounded-full bg-slate-800 hover:bg-slate-700 disabled:opacity-50 transition-colors text-lg">⏮</button>
+              <button onClick={handlePlayPause} disabled={labMode==='single' ? isSorted : isRaceSorted} className={`w-14 h-14 flex items-center justify-center rounded-full text-xl shadow-lg transition-transform hover:scale-105 ${isPlaying ? 'bg-amber-500 text-slate-900' : 'bg-blue-600 text-white'}`}>{isPlaying ? '⏸' : '▶'}</button>
+              <button onClick={handleNextStep} disabled={isPlaying || (labMode==='single' ? isSorted||currentFrameIdx>=allFrames.length-1 : isRaceSorted||currentRaceIdx>=maxRaceFrames-1)} className="w-10 h-10 flex items-center justify-center rounded-full bg-slate-800 hover:bg-slate-700 disabled:opacity-50 transition-colors text-lg">⏭</button>
+              <button onClick={handleReset} className="ml-4 px-4 py-2 rounded-lg bg-slate-800 hover:bg-rose-900/50 text-slate-300 hover:text-rose-400 font-bold text-xs transition-colors">Reset</button>
             </div>
             <div className="hidden sm:flex items-center gap-6 pr-4 font-mono text-xs">
-              <div className="flex flex-col text-right">
-                <span className="text-slate-500">Langkah</span>
-                <span className="font-bold text-blue-400">{labMode==='single' ? currentFrame.stepNum : currentRaceIdx}</span>
-              </div>
+              <div className="flex flex-col text-right"><span className="text-slate-500">Langkah</span><span className="font-bold text-blue-400">{labMode==='single' ? currentFrame.stepNum : currentRaceIdx}</span></div>
               {labMode === 'single' && (
                 <>
-                  <div className="flex flex-col text-right">
-                    <span className="text-slate-500">Compare</span>
-                    <span className="font-bold text-amber-400">{currentFrame.totalCompares}</span>
-                  </div>
-                  <div className="flex flex-col text-right">
-                    <span className="text-slate-500">Swap</span>
-                    <span className="font-bold text-rose-400">{currentFrame.totalSwaps}</span>
-                  </div>
+                  <div className="flex flex-col text-right"><span className="text-slate-500">Compare</span><span className="font-bold text-amber-400">{currentFrame.totalCompares}</span></div>
+                  <div className="flex flex-col text-right"><span className="text-slate-500">Swap</span><span className="font-bold text-rose-400">{currentFrame.totalSwaps}</span></div>
                 </>
               )}
             </div>
@@ -603,16 +577,12 @@ export default function PlaygroundPage() {
               <span className={`w-2 h-2 rounded-full ${isPlaying ? 'bg-emerald-500 animate-pulse' : 'bg-slate-600'}`}></span>
               Execution Log
             </span>
-            <button onClick={() => { labMode==='single'?setLogs([]):setGeneralLogs([]) }} className="text-xs text-slate-500 hover:text-white transition-colors font-mono">
-              Clear
-            </button>
+            <button onClick={() => { labMode==='single'?setLogs([]):setGeneralLogs([]) }} className="text-xs text-slate-500 hover:text-white transition-colors font-mono">Clear</button>
           </div>
 
           {labMode === 'race' && (
             <div className="flex flex-wrap gap-1 mb-3">
-              <button onClick={() => setActiveLogTab('general')} className={`px-2 py-1 rounded text-[10px] font-bold transition-all ${activeLogTab === 'general' ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-400'}`}>
-                Balapan
-              </button>
+              <button onClick={() => setActiveLogTab('general')} className={`px-2 py-1 rounded text-[10px] font-bold transition-all ${activeLogTab === 'general' ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-400'}`}>Balapan (Semua)</button>
               {selectedAlgos.map((id) => (
                 <button key={id} onClick={() => setActiveLogTab(id)} className={`px-2 py-1 rounded text-[10px] font-bold transition-all ${activeLogTab === id ? 'bg-amber-500 text-slate-950 font-extrabold' : 'bg-slate-800 text-slate-400'}`}>
                   {allAlgos.find(a => a.id === id)?.name.replace(' Sort', '')}
@@ -634,12 +604,34 @@ export default function PlaygroundPage() {
             {labMode === 'single' ? (
               logs.map(renderLogItem)
             ) : activeLogTab === 'general' ? (
-              generalLogs.map(renderLogItem)
+              <>
+                {generalLogs.map(renderLogItem)}
+                {/* FITUR BARU: FULL INTERLACED LOGS DI TAB UMUM */}
+                {Array.from({ length: currentRaceIdx + 1 }).map((_, i) => (
+                  <React.Fragment key={`step-${i}`}>
+                    {selectedAlgos.map(id => {
+                      const f = raceFramesMap[id];
+                      if (!f || i >= f.length || i === 0) return null; // skip initial state to avoid spam
+                      const frame = f[i];
+                      const algoName = allAlgos.find(a => a.id === id)?.name.replace(' Sort', '') || id;
+                      return (
+                        <div key={`${id}-${i}`} className="flex items-start gap-2.5 leading-relaxed p-1.5 hover:bg-slate-800/30 rounded border border-transparent transition-colors mt-1">
+                          <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold border shrink-0 text-center min-w-[65px] ${getBadgeStyle(frame.logType)}`}>{frame.logType}</span>
+                          <span className="px-1.5 py-0.5 rounded text-[9px] font-extrabold border bg-slate-800 text-slate-300 border-slate-600 uppercase shrink-0">{algoName}</span>
+                          <span className={frame.logType === 'SWAP' ? "text-rose-200 font-medium text-xs" : frame.logType === 'SORTED' ? "text-emerald-300 font-bold text-xs" : frame.logType === 'PIVOT' ? "text-purple-200 font-medium text-xs" : "text-slate-300 text-xs"}>
+                            {frame.logMsg}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </React.Fragment>
+                ))}
+              </>
             ) : (
               (raceFramesMap[activeLogTab] || []).slice(0, currentRaceIdx + 1).map((f, idx) => (
                 <div key={idx} className="flex items-start gap-2.5 leading-relaxed p-1.5 hover:bg-slate-800/30 rounded border border-transparent transition-colors">
                   <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold border shrink-0 text-center min-w-[65px] ${getBadgeStyle(f.logType)}`}>{f.logType}</span>
-                  <span className={f.logType === 'SWAP' ? "text-rose-200 font-medium text-xs" : "text-slate-300 text-xs"}>{f.logMsg}</span>
+                  <span className={f.logType === 'SWAP' ? "text-rose-200 font-medium text-xs" : f.logType === 'SORTED' ? "text-emerald-300 font-bold text-xs" : f.logType === 'PIVOT' ? "text-purple-200 font-medium text-xs" : "text-slate-300 text-xs"}>{f.logMsg}</span>
                 </div>
               ))
             )}
@@ -647,61 +639,66 @@ export default function PlaygroundPage() {
         </div>
       </main>
 
-      {/* ========================================================================= */}
-      {/* FITUR BARU: FULL DATA LOG TABLE DI BAGIAN BAWAH */}
-      {/* ========================================================================= */}
+      {/* TABEL FULL DATA TRACE */}
       <section className="max-w-6xl mx-auto w-full px-6 pb-16">
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-          <div className="bg-slate-900 px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="bg-slate-900 px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800">
             <h3 className="font-extrabold text-white flex items-center gap-2">
               <span>📋</span> Tabel Riwayat Data Penuh (Trace Table)
             </h3>
-            {labMode === 'race' && activeLogTab === 'general' && (
-              <span className="text-xs text-amber-300 font-medium">⚠️ Pilih tab algoritma spesifik di kotak log atas untuk melihat datanya.</span>
-            )}
-            {labMode === 'race' && activeLogTab !== 'general' && (
-              <span className="text-xs text-emerald-300 font-medium">Menampilkan Data: {allAlgos.find(a=>a.id===activeLogTab)?.name}</span>
+            
+            {/* FITUR BARU: TOMBOL TAB ALGORITMA DI TABEL BAWAH */}
+            {labMode === 'race' && (
+              <div className="flex items-center gap-3">
+                <span className="text-xs text-slate-400 font-bold uppercase tracking-wider hidden sm:block">Data Algoritma:</span>
+                <div className="flex bg-slate-800 p-1 rounded-lg border border-slate-700">
+                  {selectedAlgos.map((id) => {
+                    const algo = allAlgos.find(a => a.id === id);
+                    const isActive = activeTableTab === id;
+                    return (
+                      <button
+                        key={id} onClick={() => setActiveTableTab(id)}
+                        className={`px-3 py-1.5 rounded text-[11px] font-bold transition-all ${isActive ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-400 hover:text-white'}`}
+                      >
+                        {algo?.name.replace(' Sort', '')}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
             )}
           </div>
 
           <div className="overflow-x-auto max-h-[500px] scrollbar-thin scrollbar-thumb-slate-300">
-            {labMode === 'race' && activeLogTab === 'general' ? (
-              <div className="p-12 text-center text-slate-500 font-medium">
-                Riwayat perubahan data tidak tersedia untuk mode log umum. Silakan pilih salah satu tab algoritma di jendela Log (kanan atas) terlebih dahulu.
-              </div>
-            ) : (
-              <table className="w-full text-left border-collapse text-xs whitespace-nowrap">
-                <thead className="sticky top-0 bg-slate-50 border-b border-slate-200 z-10 shadow-sm">
-                  <tr>
-                    <th className="py-3.5 px-6 font-extrabold text-slate-600 uppercase">Langkah</th>
-                    <th className="py-3.5 px-6 font-extrabold text-slate-600 uppercase">Operasi</th>
-                    <th className="py-3.5 px-6 font-extrabold text-slate-600 uppercase">Keterangan Aktivitas</th>
-                    <th className="py-3.5 px-6 font-extrabold text-slate-600 uppercase">Isi Array (Kondisi Memori)</th>
+            <table className="w-full text-left border-collapse text-xs whitespace-nowrap">
+              <thead className="sticky top-0 bg-slate-50 border-b border-slate-200 z-10 shadow-sm">
+                <tr>
+                  <th className="py-3.5 px-6 font-extrabold text-slate-600 uppercase">Langkah</th>
+                  <th className="py-3.5 px-6 font-extrabold text-slate-600 uppercase">Operasi</th>
+                  <th className="py-3.5 px-6 font-extrabold text-slate-600 uppercase">Keterangan Aktivitas</th>
+                  <th className="py-3.5 px-6 font-extrabold text-slate-600 uppercase">Isi Array (Kondisi Memori)</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 font-mono text-slate-700">
+                {traceFrames.map((frame, idx) => (
+                  <tr key={idx} className="hover:bg-slate-50/80 transition-colors">
+                    <td className="py-3 px-6 font-bold text-slate-900">#{frame.stepNum}</td>
+                    <td className="py-3 px-6">
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${getBadgeStyle(frame.logType).replace('bg-slate-800', 'bg-slate-100').replace('text-slate-300', 'text-slate-600')}`}>
+                        {frame.logType}
+                      </span>
+                    </td>
+                    <td className="py-3 px-6">{frame.logMsg}</td>
+                    <td className="py-3 px-6 font-bold tracking-wider text-blue-700">
+                      [{frame.array.join(', ')}]
+                    </td>
                   </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 font-mono text-slate-700">
-                  {traceFrames.map((frame, idx) => (
-                    <tr key={idx} className="hover:bg-slate-50/80 transition-colors">
-                      <td className="py-3 px-6 font-bold text-slate-900">#{frame.stepNum}</td>
-                      <td className="py-3 px-6">
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${getBadgeStyle(frame.logType).replace('bg-slate-800', 'bg-slate-100').replace('text-slate-300', 'text-slate-600')}`}>
-                          {frame.logType}
-                        </span>
-                      </td>
-                      <td className="py-3 px-6">{frame.logMsg}</td>
-                      <td className="py-3 px-6 font-bold tracking-wider text-blue-700">
-                        [{frame.array.join(', ')}]
-                      </td>
-                    </tr>
-                  ))}
-                  {traceFrames.length === 0 && (
-                    <tr>
-                      <td colSpan={4} className="py-12 text-center text-slate-400 italic">Belum ada riwayat data yang tercatat.</td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            )}
+                ))}
+                {traceFrames.length === 0 && (
+                  <tr><td colSpan={4} className="py-12 text-center text-slate-400 italic">Belum ada riwayat data yang tercatat.</td></tr>
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
       </section>
