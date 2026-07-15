@@ -41,7 +41,7 @@ export default function PlaygroundPage() {
     setIsLoading(true);
     setExplanation('Menghubungi server Laravel API (127.0.0.1:8000)...');
     try {
-      const response = await fetch('http://127.0.0.1:8000/api/simulate', {
+      const response = await fetch('sorting-playground-backend-production.up.railway.app', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
