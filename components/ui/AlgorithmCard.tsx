@@ -36,10 +36,10 @@ export default function AlgorithmCard({ index, title, description, complexity, d
         </div>
         <div className="flex flex-wrap items-center gap-4 pt-2">
           <div className="flex items-center gap-1.5 text-xs font-bold text-slate-500 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-lg">
-            <span>⚡ Time:</span> <span className="text-slate-900 font-mono">{complexity}</span>
+            <span>Time:</span> <span className="text-slate-900 font-mono">{complexity}</span>
           </div>
           <div className="flex items-center gap-1.5 text-xs font-bold text-slate-500 bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-lg">
-            <span>🎯 Range:</span> <span className="text-slate-900 font-mono">{stepsCount}</span>
+            <span>Range:</span> <span className="text-slate-900 font-mono">{stepsCount}</span>
           </div>
         </div>
       </div>
@@ -59,4 +59,5 @@ export default function AlgorithmCard({ index, title, description, complexity, d
     </div>
   );
 }
+
 
