@@ -16,7 +16,7 @@ export default function PlaygroundPage() {
   const [sortedIdx, setSortedIdx] = useState<number[]>([]);
   
   const [logs, setLogs] = useState<string[]>([
-    "💬 System ready. Pilih algoritma atau masukkan deret angka manual, lalu klik 'Visualisasikan'."
+    "💬 System ready (Hybrid Architecture). Pilih algoritma atau masukkan deret angka manual, lalu klik 'Visualisasikan'."
   ]);
   const terminalRef = useRef<HTMLDivElement>(null);
 
@@ -66,6 +66,84 @@ export default function PlaygroundPage() {
     setLogs(prev => [...prev.slice(-30), msg]);
   };
 
+  // --- MESIN KOMPUTASI LOKAL (OFFLINE FALLBACK ENGINE) ---
+  // Bertugas menghitung langkah visualisasi jika Cloud Railway sedang tidur/error
+  const computeLocalSteps = (algo: string, initialArr: number[]) => {
+    const steps: Array<{ array: number[]; comparing: number[]; swapped: boolean }> = [];
+    const arr = [...initialArr];
+    const n = arr.length;
+
+    if (algo === 'bubble') {
+      for (let i = 0; i < n - 1; i++) {
+        for (let j = 0; j < n - i - 1; j++) {
+          steps.push({ array: [...arr], comparing: [j, j + 1], swapped: false });
+          if (arr[j] > arr[j + 1]) {
+            const temp = arr[j];
+            arr[j] = arr[j + 1];
+            arr[j + 1] = temp;
+            steps.push({ array: [...arr], comparing: [j, j + 1], swapped: true });
+          }
+        }
+      }
+    } else if (algo === 'selection') {
+      for (let i = 0; i < n - 1; i++) {
+        let minIdx = i;
+        for (let j = i + 1; j < n; j++) {
+          steps.push({ array: [...arr], comparing: [minIdx, j], swapped: false });
+          if (arr[j] < arr[minIdx]) {
+            minIdx = j;
+          }
+        }
+        if (minIdx !== i) {
+          const temp = arr[i];
+          arr[i] = arr[minIdx];
+          arr[minIdx] = temp;
+          steps.push({ array: [...arr], comparing: [i, minIdx], swapped: true });
+        }
+      }
+    } else if (algo === 'insertion') {
+      for (let i = 1; i < n; i++) {
+        let key = arr[i];
+        let j = i - 1;
+        steps.push({ array: [...arr], comparing: [j, i], swapped: false });
+        while (j >= 0 && arr[j] > key) {
+          arr[j + 1] = arr[j];
+          steps.push({ array: [...arr], comparing: [j, j + 1], swapped: true });
+          j = j - 1;
+        }
+        arr[j + 1] = key;
+      }
+    } else if (algo === 'quick') {
+      const quickSortHelper = (low: number, high: number) => {
+        if (low < high) {
+          let pivot = arr[high];
+          let i = low - 1;
+          for (let j = low; j < high; j++) {
+            steps.push({ array: [...arr], comparing: [j, high], swapped: false });
+            if (arr[j] <= pivot) {
+              i++;
+              const temp = arr[i];
+              arr[i] = arr[j];
+              arr[j] = temp;
+              if (i !== j) steps.push({ array: [...arr], comparing: [i, j], swapped: true });
+            }
+          }
+          const temp = arr[i + 1];
+          arr[i + 1] = arr[high];
+          arr[high] = temp;
+          if (i + 1 !== high) steps.push({ array: [...arr], comparing: [i + 1, high], swapped: true });
+          
+          let pi = i + 1;
+          quickSortHelper(low, pi - 1);
+          quickSortHelper(pi + 1, high);
+        }
+      };
+      quickSortHelper(0, n - 1);
+    }
+    return steps;
+  };
+
+  // Fungsi Utama Pemanggil Cloud API Railway dengan Auto-Fallback Lokal
   const handleSimulate = async () => {
     if (isPlaying) return;
     setIsPlaying(true);
@@ -74,7 +152,13 @@ export default function PlaygroundPage() {
     setSortedIdx([]);
     addLog(`🚀 Mengirim request ke Cloud Railway (Algoritma: ${algorithm.toUpperCase()})...`);
 
+    let steps: Array<{ array: number[]; comparing: number[]; swapped: boolean }> = [];
+    let usedFallback = false;
+
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 6000); // Batasi tunggu cloud maksimal 6 detik
+
       const response = await fetch('https://sorting-playground-backend-production.up.railway.app/api/simulate', {
         method: 'POST',
         headers: {
@@ -85,50 +169,61 @@ export default function PlaygroundPage() {
           algorithm: algorithm,
           data: array,
         }),
+        signal: controller.signal
       });
 
+      clearTimeout(timeoutId);
+
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        throw new Error(`HTTP Error Status: ${response.status}`);
       }
 
       const result = await response.json();
-      const steps = result.steps || [];
+      steps = result.steps || [];
+      addLog(`✅ Sukses dari Cloud Railway! Memutar animasi dengan tempo ${speed}ms...`);
 
-      addLog(`✅ Data diterima dari cloud! Memutar animasi dengan durasi jeda ${speed}ms...`);
+    } catch (error: any) {
+      console.warn("Cloud Railway unavailable, switching to local fallback:", error);
+      usedFallback = true;
+      const errorReason = error.name === 'AbortError' ? 'Timeout (Server Tidur)' : error.message || 'CORS/Network Error';
+      
+      addLog(`⚠️ Cloud Railway kendala (${errorReason}).`);
+      addLog(`⚡ Mengaktifkan Mesin Komputasi Lokal (Offline Fallback Engine)...`);
+      
+      // Hitung algoritma secara lokal di browser
+      steps = computeLocalSteps(algorithm, array);
+      addLog(`✅ Komputasi lokal selesai (${steps.length} langkah)! Memutar animasi...`);
+    }
 
-      for (let i = 0; i < steps.length; i++) {
-        const step = steps[i];
-        
-        if (step.array) setArray(step.array);
-        
-        const comp = step.comparing || [];
-        const swap = step.swapped ? comp : [];
-        setComparingIdx(comp);
-        setSwappedIdx(swap);
+    // Jalankan Loop Animasi
+    for (let i = 0; i < steps.length; i++) {
+      const step = steps[i];
+      
+      if (step.array) setArray(step.array);
+      
+      const comp = step.comparing || [];
+      const swap = step.swapped ? comp : [];
+      setComparingIdx(comp);
+      setSwappedIdx(swap);
 
-        if (comp.length === 2) {
-          const [idx1, idx2] = comp;
-          if (step.swapped) {
-            addLog(`🔄 Swap: Elemen [${idx1}] (${step.array[idx1]}) ditukar dengan [${idx2}] (${step.array[idx2]})`);
-          } else {
-            addLog(`🔍 Compare: Elemen [${idx1}] & [${idx2}] posisi sudah sesuai.`);
-          }
+      if (comp.length === 2) {
+        const [idx1, idx2] = comp;
+        const prefix = usedFallback ? "[Local Engine]" : "[Cloud Engine]";
+        if (step.swapped) {
+          addLog(`🔄 ${prefix} Swap: Elemen [${idx1}] (${step.array[idx1]}) ditukar dengan [${idx2}] (${step.array[idx2]})`);
+        } else {
+          addLog(`🔍 ${prefix} Compare: Elemen [${idx1}] & [${idx2}] posisi sudah sesuai.`);
         }
-
-        await new Promise(resolve => setTimeout(resolve, speed));
       }
 
-      setSortedIdx(Array.from({ length: array.length }, (_, i) => i));
-      setComparingIdx([]);
-      setSwappedIdx([]);
-      addLog("🎯 Visualisasi selesai! Seluruh elemen array telah terurut sempurna.");
-
-    } catch (error) {
-      console.error("Simulation error:", error);
-      addLog("❌ Gagal terhubung ke Cloud API Railway. Pastikan server backend sedang aktif.");
-    } finally {
-      setIsPlaying(false);
+      await new Promise(resolve => setTimeout(resolve, speed));
     }
+
+    setSortedIdx(Array.from({ length: array.length }, (_, i) => i));
+    setComparingIdx([]);
+    setSwappedIdx([]);
+    addLog(`🎯 Visualisasi selesai sempurna! (${usedFallback ? 'Eksekusi: Local Browser Engine' : 'Eksekusi: Laravel Railway Cloud'})`);
+    setIsPlaying(false);
   };
 
   const maxVal = Math.max(...array, 100);
@@ -264,7 +359,7 @@ export default function PlaygroundPage() {
           <div className="flex items-center justify-between border-b border-slate-800 pb-3 mb-3">
             <span className="text-xs font-bold text-slate-400 flex items-center gap-2">
               <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
-              LIVE EXECUTION TERMINAL LOG (RAILWAY CLOUD STREAM)
+              LIVE EXECUTION TERMINAL LOG (HYBRID CLOUD / LOCAL STREAM)
             </span>
             <button 
               onClick={() => setLogs(["💬 Terminal log dibersihkan."])}
@@ -284,8 +379,8 @@ export default function PlaygroundPage() {
                 className={
                   log.includes("❌") || log.includes("⚠️") ? "text-rose-400 font-semibold" :
                   log.includes("🎯") ? "text-emerald-400 font-bold" :
-                  log.includes("🚀") || log.includes("🛠️") ? "text-cyan-400 font-semibold" :
-                  log.includes("🔄 Swap") ? "text-amber-300" : "text-slate-300"
+                  log.includes("🚀") || log.includes("🛠️") || log.includes("⚡") ? "text-cyan-400 font-semibold" :
+                  log.includes("🔄") ? "text-amber-300" : "text-slate-300"
                 }
               >
                 <span className="text-slate-600 mr-2">[{new Date().toLocaleTimeString('id-ID')}]</span>
@@ -297,7 +392,7 @@ export default function PlaygroundPage() {
       </main>
 
       <footer className="py-6 text-center text-xs text-slate-500 border-t border-slate-200 mt-12 bg-white">
-        Interactive Sorting Playground Full-Stack Architecture • Powered by Next.js & Laravel Railway Cloud
+        Interactive Sorting Playground Hybrid Architecture • Powered by Next.js & Laravel Railway Cloud
       </footer>
     </div>
   );
