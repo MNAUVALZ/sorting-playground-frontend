@@ -4,7 +4,6 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import Navbar from '@/components/ui/Navbar';
 import Footer from '@/components/ui/Footer';
-import { notFound } from 'next/navigation';
 
 const quizDatabase: Record<string, any> = {
   'bubble-sort': {
@@ -61,9 +60,14 @@ const quizDatabase: Record<string, any> = {
   }
 };
 
-export default function QuizPage({ params }: any) {
-  // Safe unwrapping for Next.js 15
-  const resolvedParams = React.use(params as any);
+// MENDIFINISIKAN TIPE PROMISE PARAMS SECARA TEGAS UNTUK NEXT.JS 15
+interface PageProps {
+  params: Promise<{ slug: string }>;
+}
+
+export default function QuizPage({ params }: PageProps) {
+  // Safe unwrapping for Next.js 15 Client Component menggunakan React.use()
+  const resolvedParams = React.use(params);
   const quizData = quizDatabase[resolvedParams.slug];
 
   const [currentIdx, setCurrentIdx] = useState(0);
@@ -148,7 +152,6 @@ export default function QuizPage({ params }: any) {
     <div className="min-h-screen bg-slate-50 flex flex-col justify-between">
       <Navbar />
 
-      {/* Header Sticky Progress */}
       <div className="sticky top-16 z-40 bg-white/90 backdrop-blur-md border-b border-slate-200 shadow-sm">
         <div className="max-w-3xl mx-auto px-6 py-4 flex items-center justify-between">
           <Link href={`/algorithm/${resolvedParams.slug}`} className="text-xs font-bold text-slate-500 hover:text-slate-900 transition-colors">
