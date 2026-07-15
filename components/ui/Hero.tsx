@@ -3,78 +3,80 @@ import Link from 'next/link';
 
 export default function Hero() {
   return (
-    <section className="py-16 md:py-24 px-6 bg-gradient-to-b from-white to-slate-50 border-b border-slate-200 overflow-hidden">
-      <div className="max-w-6xl mx-auto flex flex-col lg:flex-row items-center gap-12 lg:gap-16">
-        <div className="flex-1 space-y-6 text-center lg:text-left">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-blue-50 text-blue-700 rounded-full text-xs sm:text-sm font-bold tracking-wide border border-blue-200 shadow-sm">
-            <span>🎓</span> Platform Eksplorasi & Pedagogi Struktur Data Modern
+    <section className="relative pt-20 pb-24 lg:pt-28 lg:pb-32 px-6 overflow-hidden bg-slate-50 border-b border-slate-200">
+      {/* Background Grid Pattern (Vercel/Stripe Style) */}
+      <div className="absolute inset-0 bg-[linear-gradient(to_right,#e2e8f0_1px,transparent_1px),linear-gradient(to_bottom,#e2e8f0_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] opacity-40"></div>
+      
+      <div className="max-w-6xl mx-auto flex flex-col lg:flex-row items-center gap-16 relative z-10">
+        {/* Kolom Kiri: Copywriting & CTA Utama */}
+        <div className="flex-1 space-y-8 text-center lg:text-left">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-white text-slate-800 rounded-full text-xs font-bold tracking-wide border border-slate-200 shadow-sm">
+            <span className="w-2 h-2 rounded-full bg-blue-600 animate-pulse"></span>
+            Platform Pedagogi Struktur Data
           </div>
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-slate-900 leading-[1.15] tracking-tight">
-            Memahami Logika Pengurutan Data Lewat <span className="text-blue-600 underline decoration-blue-300 decoration-wavy decoration-2">Visualisasi Nyata</span>.
+          
+          <h1 className="text-4xl sm:text-5xl lg:text-[3.5rem] font-extrabold text-slate-900 leading-[1.15] tracking-tight">
+            Pahami Algoritma Tanpa Menghafal <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-cyan-500">Kode Buta.</span>
           </h1>
-          <p className="text-base sm:text-lg text-slate-600 max-w-xl mx-auto lg:mx-0 leading-relaxed font-normal">
-            Tinggalkan cara lama menghafal kode buta. Pelajari analisis kompleksitas matematis berlandaskan publikasi ilmiah IEEE/ACM, serta uji efisiensi algoritma secara langsung di dalam lab eksekusi waktu nyata.
+          
+          <p className="text-base sm:text-lg text-slate-600 max-w-xl mx-auto lg:mx-0 leading-relaxed font-medium">
+            Jelajahi analisis kompleksitas berlandaskan literatur IEEE/ACM, dan saksikan logika pengurutan data bekerja secara real-time di dalam Simulator interaktif.
           </p>
-          <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3.5 pt-2">
+          
+          <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 pt-2">
             <Link 
               href="/playground" 
-              className="w-full sm:w-auto px-7 py-3.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-sm transition-all shadow-lg hover:shadow-blue-500/25 flex items-center justify-center gap-2 group"
+              className="w-full sm:w-auto px-8 py-3.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-bold text-sm transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5 flex items-center justify-center gap-2"
             >
-              <span>Buka Lab Eksperimen</span>
-              <span className="group-hover:translate-x-1 transition-transform">→</span>
+              <span>Buka Simulator</span>
+              <span>→</span>
             </Link>
             <Link 
               href="/catalog" 
-              className="w-full sm:w-auto px-7 py-3.5 bg-white border border-slate-300 hover:border-slate-400 text-slate-800 rounded-xl font-bold text-sm transition-all shadow-sm hover:bg-slate-50 text-center"
+              className="w-full sm:w-auto px-8 py-3.5 bg-white border border-slate-300 hover:border-slate-400 text-slate-700 rounded-xl font-bold text-sm transition-all shadow-sm hover:bg-slate-50 text-center"
             >
-              Jelajahi Pustaka Modul
+              Baca Modul Teori
             </Link>
           </div>
         </div>
 
+        {/* Kolom Kanan: Ilustrasi Mockup Minimalis */}
         <div className="flex-1 w-full max-w-lg lg:max-w-none">
-          <div className="bg-slate-900 rounded-2xl border border-slate-800 p-5 shadow-2xl relative">
-            <div className="flex items-center justify-between pb-4 mb-4 border-b border-slate-800">
-              <div className="flex items-center gap-2">
-                <span className="w-3 h-3 rounded-full bg-rose-500 block"></span>
-                <span className="w-3 h-3 rounded-full bg-amber-400 block"></span>
-                <span className="w-3 h-3 rounded-full bg-emerald-500 block"></span>
+          <div className="bg-slate-950 rounded-2xl border border-slate-800 p-2 shadow-2xl transform lg:rotate-2 hover:rotate-0 transition-transform duration-500">
+            <div className="bg-slate-900 rounded-xl overflow-hidden border border-slate-800/80">
+              {/* Window Topbar */}
+              <div className="flex items-center justify-between px-4 py-3 border-b border-slate-800 bg-slate-900/50">
+                <div className="flex items-center gap-2">
+                  <span className="w-3 h-3 rounded-full bg-rose-500"></span>
+                  <span className="w-3 h-3 rounded-full bg-amber-500"></span>
+                  <span className="w-3 h-3 rounded-full bg-emerald-500"></span>
+                </div>
+                <span className="text-[10px] font-mono font-bold text-slate-500 tracking-wider">LIVE_SIMULATOR.EXE</span>
               </div>
-              <span className="text-xs font-mono text-slate-400 font-semibold flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping inline-block"></span>
-                LIVE SIMULATION ENGINE
-              </span>
-            </div>
 
-            <div className="bg-slate-950 rounded-xl p-6 border border-slate-800/80 mb-4 flex flex-col justify-end h-56 sm:h-64">
-              <div className="flex items-end justify-between gap-2 h-full px-2">
-                <div className="w-full bg-blue-600 rounded-t h-[40%] flex items-start justify-center pt-1 shadow-md">
-                  <span className="text-[10px] font-mono font-bold text-white">25</span>
-                </div>
-                <div className="w-full bg-blue-600 rounded-t h-[70%] flex items-start justify-center pt-1 shadow-md">
-                  <span className="text-[10px] font-mono font-bold text-white">64</span>
-                </div>
-                <div className="w-full bg-amber-400 rounded-t h-[90%] flex items-start justify-center pt-1 shadow-lg shadow-amber-500/20 translate-y-[-4px]">
-                  <span className="text-[10px] font-mono font-bold text-slate-900">88</span>
-                </div>
-                <div className="w-full bg-rose-500 rounded-t h-[30%] flex items-start justify-center pt-1 shadow-lg shadow-rose-500/20 translate-y-[-4px]">
-                  <span className="text-[10px] font-mono font-bold text-white">12</span>
-                </div>
-                <div className="w-full bg-blue-600 rounded-t h-[55%] flex items-start justify-center pt-1 shadow-md">
-                  <span className="text-[10px] font-mono font-bold text-white">45</span>
-                </div>
-                <div className="w-full bg-emerald-500 rounded-t h-[95%] flex items-start justify-center pt-1 shadow-md">
-                  <span className="text-[10px] font-mono font-bold text-white">91</span>
-                </div>
+              {/* Balok Visualisasi */}
+              <div className="p-6 h-56 flex items-end justify-between gap-2.5 relative bg-gradient-to-b from-slate-900 to-slate-950">
+                <div className="w-full bg-slate-700 rounded-t h-[40%]"></div>
+                <div className="w-full bg-slate-700 rounded-t h-[70%]"></div>
+                <div className="w-full bg-amber-400 rounded-t h-[90%] shadow-[0_0_15px_rgba(251,191,36,0.3)] translate-y-[-4px]"></div>
+                <div className="w-full bg-rose-500 rounded-t h-[30%] shadow-[0_0_15px_rgba(244,63,94,0.3)] translate-y-[-4px]"></div>
+                <div className="w-full bg-slate-700 rounded-t h-[55%]"></div>
+                <div className="w-full bg-emerald-500 rounded-t h-[100%]"></div>
               </div>
-            </div>
 
-            <div className="font-mono text-xs text-slate-300 bg-slate-800/50 p-3.5 rounded-lg border border-slate-700/50 flex items-center justify-between">
-              <div className="flex items-center gap-2 overflow-hidden whitespace-nowrap text-ellipsis">
-                <span className="text-amber-400 font-bold">TELEMETRY</span>
-                <span className="text-slate-400">→ Memory Swaps: O(1) In-Place • Partisi Pivot Aktif</span>
+              {/* Terminal Log Output */}
+              <div className="bg-slate-950 p-4 border-t border-slate-800 font-mono text-xs">
+                <div className="flex items-center gap-2 text-slate-400 mb-1.5">
+                  <span className="text-slate-600">[10:42:01]</span>
+                  <span className="text-rose-400 font-bold px-1.5 border border-rose-900 bg-rose-950/50 rounded">SWAP</span>
+                  <span>Tukar posisi (88) dengan (12)</span>
+                </div>
+                <div className="flex items-center gap-2 text-slate-400">
+                  <span className="text-slate-600">[10:42:02]</span>
+                  <span className="text-emerald-400 font-bold px-1.5 border border-emerald-900 bg-emerald-950/50 rounded">SORTED</span>
+                  <span className="text-emerald-300">Pengurutan selesai!</span>
+                </div>
               </div>
-              <span className="text-emerald-400 font-bold ml-2 shrink-0">READY</span>
             </div>
           </div>
         </div>
