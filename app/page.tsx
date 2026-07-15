@@ -1,6 +1,8 @@
 ﻿import React from 'react';
+import Navbar from '@/components/ui/Navbar';
 import Hero from '@/components/ui/Hero';
 import AlgorithmCard from '@/components/ui/AlgorithmCard';
+import Footer from '@/components/ui/Footer';
 
 export default function Home() {
   const algorithms = [
@@ -43,28 +45,44 @@ export default function Home() {
   ];
 
   return (
-    <main className="min-h-screen bg-slate-50 pb-20">
-      <Hero />
-      <section id="katalog" className="max-w-6xl mx-auto px-6 pt-16">
-        <div className="flex flex-col md:flex-row md:items-end justify-between mb-10 gap-4">
-          <div>
-            <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight">
-              Katalog Modul Algoritma
-            </h2>
-            <p className="text-slate-600 mt-2">
-              Materi dipadukan langsung dari publikasi ilmiah IEEE, ACM, dan literatur standar ilmu komputer.
-            </p>
+    <div className="min-h-screen flex flex-col justify-between bg-slate-50">
+      {/* Navigasi Kaca Buram */}
+      <Navbar />
+
+      <main className="flex-1">
+        {/* Hero Section dengan Ilustrasi Balok */}
+        <Hero />
+
+        {/* Katalog Modul Algoritma */}
+        <section id="katalog" className="max-w-6xl mx-auto px-6 py-20 scroll-mt-16">
+          <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-4 border-b border-slate-200 pb-6">
+            <div>
+              <span className="text-xs font-bold text-blue-600 uppercase tracking-widest block mb-2">
+                Pilih Modul Pembelajaran
+              </span>
+              <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
+                Katalog Modul Algoritma
+              </h2>
+              <p className="text-sm sm:text-base text-slate-600 mt-2 max-w-2xl">
+                Materi dipadukan langsung dari publikasi ilmiah IEEE, ACM, dan literatur standar ilmu komputer dengan visualisasi waktu nyata.
+              </p>
+            </div>
+            <div className="inline-flex items-center gap-2 text-xs sm:text-sm font-bold text-blue-700 bg-blue-50 px-4 py-2 rounded-xl self-start md:self-auto border border-blue-200 shadow-sm shrink-0">
+              <span>📚</span> Total 4 Modul Tersedia
+            </div>
           </div>
-          <div className="text-sm font-semibold text-blue-700 bg-blue-50 px-4 py-2 rounded-xl self-start md:self-auto border border-blue-200 shadow-sm">
-            📚 Total 4 Modul Tersedia
+
+          {/* Grid Kartu Algoritma Responsif */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {algorithms.map((algo) => (
+              <AlgorithmCard key={algo.slug} {...algo} />
+            ))}
           </div>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {algorithms.map((algo) => (
-            <AlgorithmCard key={algo.slug} {...algo} />
-          ))}
-        </div>
-      </section>
-    </main>
+        </section>
+      </main>
+
+      {/* Footer EdTech Profesional */}
+      <Footer />
+    </div>
   );
 }
