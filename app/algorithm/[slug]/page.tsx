@@ -1,21 +1,13 @@
-﻿import React from 'react';
+﻿"use client";
+
+import React, { useState, use } from 'react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import Navbar from '@/components/ui/Navbar';
+import Footer from '@/components/ui/Footer';
 
-const journalMaterials: Record<string, {
-  title: string;
-  badge: string;
-  analogy: string;
-  concept: string;
-  pros: string[];
-  cons: string[];
-  bestCase: string;
-  worstCase: string;
-  spaceComp: string;
-  mechanism: string[];
-  pseudocode: string;
-  citation: string;
-}> = {
+// Data statis Jurnal & Kuis
+const journalMaterials: Record<string, any> = {
   'bubble-sort': {
     title: "Bubble Sort",
     badge: "Pemula • O(n²)",
@@ -46,17 +38,29 @@ const journalMaterials: Record<string, {
     repeat
         swapped = false
         for i = 1 to n - 1 inclusive do
-            /* Bandingkan elemen bersebelahan */
             if A[i - 1] > A[i] then
                 swap(A[i - 1], A[i])
                 swapped = true
             end if
         end for
-        /* Optimasi: kurangi batas pemindaian */
         n = n - 1
     until not swapped
 end procedure`,
-    citation: "Astrachan, O. (2003). Bubble sort: an archaeological algorithmic analysis. ACM SIGCSE Bulletin."
+    citation: "Astrachan, O. (2003). Bubble sort: an archaeological algorithmic analysis. ACM SIGCSE Bulletin.",
+    quizzes: [
+      {
+        question: "Kapan Bubble Sort bisa mencapai kecepatan maksimalnya yaitu O(n)?",
+        options: ["Saat array terbalik secara total", "Saat array sudah terurut sejak awal", "Saat menggunakan pivot di tengah", "Saat array berisi elemen negatif"],
+        correctAnswer: 1,
+        explanation: "Benar! Jika dioptimasi menggunakan variabel 'swapped', Bubble Sort hanya butuh satu putaran O(n) untuk menyadari bahwa array sudah terurut dan langsung berhenti."
+      },
+      {
+        question: "Mengapa Bubble Sort dianggap tidak efisien untuk hardware memori yang mahal biaya tulisnya?",
+        options: ["Karena memakan RAM tambahan yang besar", "Karena sulit dipahami logikanya", "Karena melakukan terlalu banyak pertukaran (swap)", "Karena tidak bisa mengurutkan angka desimal"],
+        correctAnswer: 2,
+        explanation: "Benar! Bubble Sort terus-menerus menukar elemen bersebelahan di setiap langkah, yang menyebabkan tingginya operasi penulisan (write) ke memori."
+      }
+    ]
   },
   'selection-sort': {
     title: "Selection Sort",
@@ -64,8 +68,8 @@ end procedure`,
     analogy: "Bayangkan Anda memiliki sekeranjang bola bernomor yang acak. Anda mencari seluruh keranjang untuk menemukan bola dengan nomor paling kecil, lalu mengeluarkannya dan meletakkannya di barisan paling depan. Lalu Anda mencari bola terkecil kedua dari sisa keranjang, dan meletakkannya di urutan kedua. Itulah Selection Sort.",
     concept: "Algoritma ini membagi array menjadi dua bagian imajiner: bagian 'terurut' di sebelah kiri dan 'belum terurut' di sebelah kanan. Daripada terus-menerus menukar elemen seperti Bubble Sort, Selection Sort hanya mencari indeks dari angka paling kecil di wilayah yang belum terurut. Setelah selesai memindai, ia hanya akan melakukan satu kali pertukaran (swap) untuk memindahkan angka terkecil tersebut ke batas wilayah terurut.",
     pros: [
-      "Jumlah pertukaran memori (swap) sangat sedikit, maksimal hanya sebanyak N kali.",
-      "Sangat cocok digunakan pada perangkat keras di mana proses 'Menulis' (Write) ke memori sangat mahal/lambat, seperti EEPROM pada mikrokontroler."
+      "Jumlah pertukaran memori (swap) sangat sedikit, maksimal hanya sebanyak n - 1 kali.",
+      "Sangat optimal untuk sistem perangkat keras dengan biaya tulis memori yang lambat atau terbatas (seperti EEPROM)."
     ],
     cons: [
       "Tidak peduli datanya sudah terurut atau belum, ia tetap memindai seluruh sisa array (Tidak Adaptif).",
@@ -84,23 +88,32 @@ end procedure`,
     pseudocode: `procedure selectionSort( A : array of items )
     n = length(A)
     for i = 0 to n - 2 do
-        /* Asumsikan indeks saat ini adalah yang terkecil */
         min_idx = i
-        
-        /* Cari nilai terkecil di sisa array */
         for j = i + 1 to n - 1 do
             if A[j] < A[min_idx] then
                 min_idx = j
             end if
         end for
-        
-        /* Tukar jika ditemukan angka yang lebih kecil */
         if min_idx != i then
             swap(A[i], A[min_idx])
         end if
     end for
 end procedure`,
-    citation: "Mishra, A. D., & Garg, D. (2008). Selection of best sorting algorithm. Int. J. of Intelligent Information Processing."
+    citation: "Mishra, A. D., & Garg, D. (2008). Selection of best sorting algorithm. Int. J. of Intelligent Information Processing.",
+    quizzes: [
+      {
+        question: "Apa keunggulan mutlak Selection Sort dibandingkan Bubble Sort?",
+        options: ["Jauh lebih cepat secara teoritis (O(n log n))", "Melakukan operasi pertukaran memori (Swap) yang sangat sedikit", "Lebih mudah diimplementasikan dengan rekursif", "Selalu bersifat Stable Sort"],
+        correctAnswer: 1,
+        explanation: "Tepat! Selection Sort hanya menukar elemen maksimal 1 kali per iterasi putaran, sehingga sangat menghemat biaya Write Memori."
+      },
+      {
+        question: "Berapa banyak operasi penukaran (swap) maksimal yang dilakukan Selection Sort pada array berjumlah n elemen?",
+        options: ["n² kali", "n log n kali", "n - 1 kali", "1 kali"],
+        correctAnswer: 2,
+        explanation: "Benar! Pertukaran hanya dilakukan di akhir setiap putaran iterasi luar, sehingga maksimal terjadi n - 1 kali penukaran."
+      }
+    ]
   },
   'insertion-sort': {
     title: "Insertion Sort",
@@ -108,7 +121,7 @@ end procedure`,
     analogy: "Ini adalah cara alamiah manusia menyusun kartu remi. Saat Anda mengambil satu kartu baru dari dek, Anda akan melihat susunan kartu di tangan kiri Anda (yang sudah terurut), mencari sela-sela yang pas, menggeser kartu lain, dan menyelipkan kartu baru tersebut ke posisinya.",
     concept: "Insertion Sort memproses data secara bertahap dari kiri ke kanan. Setiap kali algoritma berhadapan dengan elemen baru (kunci), ia akan menarik elemen tersebut, membandingkannya dengan elemen-elemen di sebelah kirinya secara mundur. Algoritma akan terus menggeser elemen-elemen besar ke kanan untuk 'membuka ruang', lalu menyisipkan kunci tersebut ke ruang kosong yang tepat.",
     pros: [
-      "Algoritma ini 'Sadar Urutan' (Adaptif). Jika datanya sudah hampir terurut, ia bekerja secepat kilat.",
+      "Algoritma ini 'Sadar Urutan' (Adaptif). Jika datanya sudah hampir terurut, ia bekerja secepat kilat O(n).",
       "Online Sorting: Bisa langsung mengurutkan data baru yang datang belakangan tanpa perlu mengulang dari awal.",
       "Sangat cepat untuk array berukuran kecil (kurang dari 50 elemen)."
     ],
@@ -132,46 +145,55 @@ end procedure`,
     for i = 1 to n - 1 do
         key = A[i]
         j = i - 1
-        
-        /* Geser elemen yang lebih besar ke kanan */
         while j >= 0 and A[j] > key do
             A[j + 1] = A[j]
             j = j - 1
         end while
-        
-        /* Sisipkan kunci di posisi kosong */
         A[j + 1] = key
     end for
 end procedure`,
-    citation: "Estivill-Castro, V., & Wood, D. (1992). A survey of adaptive sorting algorithms. ACM Computing Surveys."
+    citation: "Estivill-Castro, V., & Wood, D. (1992). A survey of adaptive sorting algorithms. ACM Computing Surveys.",
+    quizzes: [
+      {
+        question: "Insertion Sort dijuluki sebagai algoritma 'Adaptif'. Apa maksud dari istilah tersebut?",
+        options: ["Bisa mengurutkan huruf selain angka", "Bisa berjalan di atas sistem operasi berbeda", "Secara otomatis berjalan lebih cepat (mendekati O(n)) jika data sudah hampir terurut", "Mengubah algoritmanya sendiri menjadi Quick Sort jika data terlalu besar"],
+        correctAnswer: 2,
+        explanation: "Tepat sekali! Insertion Sort beradaptasi dengan kondisi data. Jika data sudah terurut sebagian, ia hanya melakukan sedikit perbandingan dan tidak perlu menggeser data."
+      },
+      {
+        question: "Manakah pernyataan yang paling tepat menggambarkan cara kerja Insertion Sort?",
+        options: ["Membelah array menjadi dua secara terus menerus", "Menyelipkan satu elemen ke posisi yang tepat pada bagian array yang sudah terurut", "Menukar dua elemen di ujung array terus-menerus", "Mencari nilai terkecil lalu meletakkannya di posisi terdepan"],
+        correctAnswer: 1,
+        explanation: "Benar! Bagaikan menyusun kartu remi, Insertion mengambil satu kartu (kunci) dan menyisipkannya di sela-sela kartu yang sudah tersusun rapi di sebelah kiri."
+      }
+    ]
   },
   'quick-sort': {
     title: "Quick Sort",
     badge: "Lanjutan • O(n log n)",
     analogy: "Bayangkan Anda harus memisahkan ratusan berkas ujian mahasiswa. Daripada mengurutkannya satu per satu, Anda mengambil satu berkas acak sebagai 'Standar Nilai' (Pivot). Semua ujian dengan nilai di bawah standar ditaruh di tumpukan kiri, yang di atas standar di tumpukan kanan. Lalu, Anda mengulangi pemisahan itu pada masing-masing tumpukan. Pemisahan kelompok besar ke kecil ini jauh lebih cepat!",
-    concept: "Quick Sort adalah jantung dari komputasi modern dan merupakan salah satu algoritma Divide and Conquer terbaik. Algoritma ini tidak menggeser angka satu per satu. Ia menunjuk satu angka sebagai 'Pivot'. Ia lalu memerintahkan dua penunjuk (pointer) untuk menggiring semua angka kecil ke wilayah kiri Pivot, dan semua angka besar ke wilayah kanan. Setelah itu, Pivot diposisikan tepat di tengah sebagai batas permanen. Array kiri dan array kanan yang sudah terpisah kemudian diproses dengan cara yang persis sama (Rekursif).",
+    concept: "Quick Sort adalah jantung dari komputasi modern dan merupakan algoritma Divide and Conquer terbaik. Algoritma ini menunjuk satu angka sebagai 'Pivot'. Ia lalu memerintahkan dua pointer untuk menggiring semua angka kecil ke wilayah kiri Pivot, dan semua angka besar ke wilayah kanan. Setelah itu, Pivot diposisikan di tengah sebagai batas permanen. Proses ini diulangi secara rekursif pada sub-array kiri dan kanan.",
     pros: [
-      "Kecepatan absolut! Ini adalah salah satu algoritma pengurutan tercepat yang ada dalam ilmu komputer (O(n log n)).",
-      "Bekerja langsung di dalam array memori yang sama (In-Place), sehingga sangat efisien secara cache CPU dibandingkan Merge Sort.",
-      "Digunakan sebagai pondasi fungsi pengurutan standar (.sort()) pada bahasa C++, Java, dan Python."
+      "Kompleksitas waktu rata-rata sangat cepat yaitu O(n log n), ideal untuk Big Data.",
+      "Bekerja secara In-Place dengan konsumsi memori rekursif hanya O(log n).",
+      "Memiliki kompatibilitas cache CPU (cache locality) yang sangat optimal."
     ],
     cons: [
-      "Jika tebakan 'Pivot' salah (selalu mengambil angka terkecil/terbesar), kinerjanya runtuh menjadi setara Bubble Sort.",
-      "Sistem Rekursifnya dapat menyebabkan 'Stack Overflow' jika array yang dimasukkan terlalu panjang dan tidak dioptimasi."
+      "Jika tebakan Pivot selalu salah (terburuk), kecepatannya runtuh menjadi O(n²).",
+      "Bersifat Unstable Sort dan membutuhkan proteksi ekstra dari Stack Overflow."
     ],
-    bestCase: "O(n log n) - Terjadi saat nilai Pivot selalu tepat membelah array menjadi dua bagian yang sama besar.",
-    worstCase: "O(n²) - Terjadi jika pivot selalu jatuh pada elemen paling ujung (membutuhkan optimasi Random Pivot).",
-    spaceComp: "O(log n) - Membutuhkan ruang tumpukan (Stack) di memori sistem untuk mengingat pemanggilan fungsi rekursif.",
+    bestCase: "O(n log n) - Terjadi saat nilai Pivot selalu membelah array menjadi dua bagian seimbang.",
+    worstCase: "O(n²) - Terjadi jika pivot selalu jatuh pada elemen paling ekstrem (misal array sudah terurut tanpa optimasi).",
+    spaceComp: "O(log n) - Membutuhkan ruang Stack untuk pemanggilan fungsi rekursif.",
     mechanism: [
-      "Pilih salah satu angka di array sebagai Pivot (umumnya mengambil elemen paling kanan atau paling kiri).",
+      "Pilih salah satu angka di array sebagai Pivot (umumnya mengambil elemen paling kanan).",
       "Buat batas wilayah imajiner di sebelah kiri untuk mengumpulkan angka-angka kecil.",
-      "Pindai seluruh array dari ujung ke ujung. Jika menemukan angka yang lebih kecil dari Pivot, lempar angka tersebut ke dalam batas wilayah kecil di sebelah kiri.",
-      "Setelah seluruh array dipindai, letakkan Pivot tepat di sebelah kanan wilayah kecil tersebut. Sekarang Pivot telah berada di posisi akhirnya yang sah.",
-      "Array kini terbelah dua (Sub-array kiri < Pivot, Sub-array kanan > Pivot).",
-      "Lakukan kembali langkah 1-4 secara terpisah untuk sub-array kiri dan sub-array kanan hingga pecahannya habis."
+      "Pindai seluruh array. Jika menemukan angka <= Pivot, lempar angka tersebut ke dalam batas wilayah kecil di sebelah kiri.",
+      "Letakkan Pivot tepat di sebelah kanan wilayah kecil tersebut. Pivot kini terkunci di posisi akhirnya.",
+      "Array terbelah dua (Kiri < Pivot, Kanan > Pivot).",
+      "Lakukan kembali langkah 1-4 secara rekursif pada sub-array kiri dan kanan."
     ],
-    pseudocode: `procedure quickSort(A : array of items, low : int, high : int)
-    /* Proses membelah array secara rekursif */
+    pseudocode: `procedure quickSort(A, low, high)
     if low < high then
         pivot_idx = partition(A, low, high)
         quickSort(A, low, pivot_idx - 1)
@@ -179,51 +201,81 @@ end procedure`,
     end if
 end procedure
 
-procedure partition(A : array of items, low : int, high : int) returns int
+procedure partition(A, low, high) returns int
     pivot = A[high]
     i = low - 1
-    
-    /* Giring semua angka kecil ke wilayah kiri */
     for j = low to high - 1 do
         if A[j] <= pivot then
             i = i + 1
             swap(A[i], A[j])
         end if
     end for
-    
-    /* Letakkan pivot di batas wilayah pemisah */
     swap(A[i + 1], A[high])
     return i + 1
 end procedure`,
-    citation: "Hoare, C. A. R. (1962). Quicksort. The Computer Journal, 5(1), 10-15."
+    citation: "Hoare, C. A. R. (1962). Quicksort. The Computer Journal, 5(1), 10-15.",
+    quizzes: [
+      {
+        question: "Dalam Quick Sort, apa nama istilah untuk angka yang dijadikan patokan batas pemisah array?",
+        options: ["Key", "Min_idx", "Pivot", "Anchor"],
+        correctAnswer: 2,
+        explanation: "Tepat! Pivot bertugas sebagai standar nilai di mana elemen yang lebih kecil darinya akan digeser ke kiri, dan yang lebih besar ke kanan."
+      },
+      {
+        question: "Apa kondisi yang menyebabkan Quick Sort terpuruk menjadi sangat lambat (O(n²)) pada skema partisi standar?",
+        options: ["Saat array berisi elemen desimal", "Saat nilai Pivot yang terpilih kebetulan selalu angka terkecil atau terbesar", "Saat memori RAM habis", "Saat array berisi elemen ganjil semua"],
+        correctAnswer: 1,
+        explanation: "Benar! Jika pivot tidak membelah array secara seimbang (misalnya selalu membelah array menjadi 0 elemen dan n-1 elemen), rekursinya akan berjalan sangat lambat seperti Bubble Sort."
+      }
+    ]
   }
 };
 
-export default async function AlgorithmDetailPage({ params }: any) {
-  const resolvedParams = await Promise.resolve(params);
+export default function AlgorithmDetailPage({ params }: any) {
+  // Unwrapping params safely in Next.js 15+ Client Component
+  const resolvedParams = use(params as any);
   const material = journalMaterials[resolvedParams?.slug];
 
+  // State untuk Kuis Interaktif
+  const [quizAnswers, setQuizAnswers] = useState<Record<number, number>>({});
+  const [showFeedback, setShowFeedback] = useState<Record<number, boolean>>({});
+
   if (!material) {
-    notFound();
+    return (
+      <div className="min-h-screen bg-white text-center py-32">
+        <h1 className="text-3xl font-bold text-slate-900 mb-4">Modul Tidak Ditemukan</h1>
+        <Link href="/catalog" className="text-blue-600 hover:underline">Kembali ke Katalog</Link>
+      </div>
+    );
   }
 
+  const handleOptionSelect = (quizIdx: number, optionIdx: number) => {
+    setQuizAnswers(prev => ({ ...prev, [quizIdx]: optionIdx }));
+    setShowFeedback(prev => ({ ...prev, [quizIdx]: false }));
+  };
+
+  const handleCheckAnswer = (quizIdx: number) => {
+    if (quizAnswers[quizIdx] !== undefined) {
+      setShowFeedback(prev => ({ ...prev, [quizIdx]: true }));
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-white">
-      {/* Header Sticky Sederhana */}
-      <div className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-slate-200">
-        <div className="max-w-3xl mx-auto px-6 h-16 flex items-center justify-between">
-          <Link href="/catalog" className="text-sm font-bold text-slate-500 hover:text-slate-900 transition-colors flex items-center gap-2">
-            ← Kembali ke Silabus
+    <div className="min-h-screen flex flex-col bg-white">
+      <Navbar />
+
+      <div className="sticky top-16 z-40 bg-white/90 backdrop-blur-md border-b border-slate-200 shadow-sm hidden md:block">
+        <div className="max-w-3xl mx-auto px-6 h-12 flex items-center justify-between">
+          <Link href="/catalog" className="text-xs font-bold text-slate-500 hover:text-slate-900 transition-colors flex items-center gap-2">
+            ← Silabus Modul
           </Link>
-          <div className="text-xs font-bold text-slate-800 bg-slate-100 px-3 py-1 rounded-full uppercase tracking-wider">
+          <div className="text-[10px] font-extrabold text-slate-800 bg-slate-100 px-3 py-1.5 rounded-md uppercase tracking-wider">
             {material.title}
           </div>
         </div>
       </div>
 
-      {/* Area Membaca (Reading Layout ala Notion / Medium) */}
-      <article className="max-w-3xl mx-auto px-6 py-12 md:py-20">
-        {/* Title Header */}
+      <article className="max-w-3xl mx-auto px-6 py-12 md:py-16 flex-1">
         <header className="mb-14">
           <div className="text-sm font-extrabold text-blue-600 mb-4 tracking-widest uppercase">
             {material.badge}
@@ -236,10 +288,7 @@ export default async function AlgorithmDetailPage({ params }: any) {
           </p>
         </header>
 
-        {/* Konten Utama */}
         <div className="space-y-12 text-slate-800 leading-loose text-base md:text-lg">
-          
-          {/* Analogi Kotak Callout */}
           <section className="bg-amber-50 border border-amber-200 p-6 md:p-8 rounded-2xl">
             <h2 className="text-sm font-extrabold text-amber-900 uppercase tracking-wider flex items-center gap-2 mb-3">
               <span>💡</span> Analogi Sederhana Dunia Nyata
@@ -249,14 +298,13 @@ export default async function AlgorithmDetailPage({ params }: any) {
             </p>
           </section>
 
-          {/* Kelebihan & Kekurangan */}
           <section className="grid grid-cols-1 md:grid-cols-2 gap-6 border-y border-slate-200 py-10">
             <div>
               <h3 className="text-base font-extrabold text-emerald-700 flex items-center gap-2 mb-4">
                 <span>✔️</span> Keunggulan
               </h3>
               <ul className="space-y-3">
-                {material.pros.map((pro, idx) => (
+                {material.pros.map((pro: string, idx: number) => (
                   <li key={idx} className="flex items-start gap-3 text-sm md:text-base">
                     <span className="text-emerald-500 font-bold mt-1">•</span>
                     <span className="text-slate-700">{pro}</span>
@@ -269,7 +317,7 @@ export default async function AlgorithmDetailPage({ params }: any) {
                 <span>⚠️</span> Kelemahan
               </h3>
               <ul className="space-y-3">
-                {material.cons.map((con, idx) => (
+                {material.cons.map((con: string, idx: number) => (
                   <li key={idx} className="flex items-start gap-3 text-sm md:text-base">
                     <span className="text-rose-500 font-bold mt-1">•</span>
                     <span className="text-slate-700">{con}</span>
@@ -279,12 +327,10 @@ export default async function AlgorithmDetailPage({ params }: any) {
             </div>
           </section>
 
-          {/* Cara Kerja (Step by step) */}
           <section>
             <h2 className="text-2xl md:text-3xl font-extrabold text-slate-900 mb-6">Bagaimana Cara Kerjanya?</h2>
-            <p className="text-slate-600 mb-6">Berikut adalah urutan logika yang dilakukan oleh algoritma ini di dalam memori komputer:</p>
             <div className="space-y-4">
-              {material.mechanism.map((step, idx) => (
+              {material.mechanism.map((step: string, idx: number) => (
                 <div key={idx} className="flex gap-4 p-4 rounded-xl hover:bg-slate-50 border border-transparent hover:border-slate-200 transition-colors">
                   <div className="w-8 h-8 shrink-0 bg-slate-900 text-white rounded-full flex items-center justify-center font-bold text-sm">
                     {idx + 1}
@@ -295,7 +341,6 @@ export default async function AlgorithmDetailPage({ params }: any) {
             </div>
           </section>
 
-          {/* Analisis Kompleksitas */}
           <section className="bg-slate-50 p-8 rounded-3xl border border-slate-200">
             <h2 className="text-2xl font-extrabold text-slate-900 mb-6">Analisis Kompleksitas</h2>
             <ul className="space-y-6">
@@ -317,10 +362,9 @@ export default async function AlgorithmDetailPage({ params }: any) {
             </ul>
           </section>
 
-          {/* Pseudocode & Jurnal */}
           <section>
             <h2 className="text-2xl md:text-3xl font-extrabold text-slate-900 mb-6">Pseudocode Standar</h2>
-            <div className="bg-[#0d1117] p-6 rounded-2xl overflow-x-auto border border-slate-800 shadow-2xl">
+            <div className="bg-[#0d1117] p-6 rounded-2xl overflow-x-auto border border-slate-800 shadow-xl">
               <pre className="text-sm font-mono leading-relaxed text-blue-300">
                 {material.pseudocode.replace(/procedure/g, '<span class="text-rose-400">procedure</span>')
                                     .replace(/for/g, '<span class="text-purple-400">for</span>')
@@ -330,25 +374,95 @@ export default async function AlgorithmDetailPage({ params }: any) {
                                     .replace(/return/g, '<span class="text-rose-400">return</span>')}
               </pre>
             </div>
-            
-            <div className="mt-8 pt-8 border-t border-slate-200 text-sm text-slate-500">
-              <span className="font-bold text-slate-800">Sumber Literatur Ilmiah:</span><br/>
-              {material.citation}
+            <div className="mt-6 text-xs text-slate-500 font-mono">Referensi: {material.citation}</div>
+          </section>
+
+          {/* SECTION KUIS EVALUASI (FITUR BARU TERINTEGRASI) */}
+          <section className="pt-10 border-t-2 border-slate-100">
+            <h2 className="text-2xl md:text-3xl font-extrabold text-slate-900 mb-2">Kuis Evaluasi Singkat</h2>
+            <p className="text-sm text-slate-600 mb-8">Uji pemahaman teori Anda sebelum terjun bereksperimen ke Simulator.</p>
+
+            <div className="space-y-10">
+              {material.quizzes.map((quiz: any, idx: number) => {
+                const isChecked = showFeedback[idx];
+                const isCorrect = isChecked && quizAnswers[idx] === quiz.correctAnswer;
+                
+                return (
+                  <div key={idx} className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 shadow-sm">
+                    <h3 className="text-lg font-bold text-slate-800 mb-4">
+                      <span className="text-blue-600 mr-2">Q{idx + 1}.</span> {quiz.question}
+                    </h3>
+                    
+                    <div className="space-y-3 mb-6">
+                      {quiz.options.map((opt: string, optIdx: number) => {
+                        const isSelected = quizAnswers[idx] === optIdx;
+                        let optStyle = "border-slate-200 hover:border-blue-400 hover:bg-blue-50/50";
+                        
+                        if (isChecked) {
+                          if (optIdx === quiz.correctAnswer) {
+                            optStyle = "border-emerald-500 bg-emerald-50 text-emerald-900 font-bold";
+                          } else if (isSelected) {
+                            optStyle = "border-rose-500 bg-rose-50 text-rose-900";
+                          } else {
+                            optStyle = "border-slate-200 opacity-50";
+                          }
+                        } else if (isSelected) {
+                          optStyle = "border-blue-600 bg-blue-50 font-bold text-blue-900 ring-1 ring-blue-600";
+                        }
+
+                        return (
+                          <button
+                            key={optIdx}
+                            onClick={() => !isChecked && handleOptionSelect(idx, optIdx)}
+                            disabled={isChecked}
+                            className={`w-full text-left px-5 py-3.5 rounded-xl border-2 transition-all text-sm sm:text-base ${optStyle} ${isChecked ? 'cursor-default' : 'cursor-pointer'}`}
+                          >
+                            {opt}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {!isChecked ? (
+                      <button
+                        onClick={() => handleCheckAnswer(idx)}
+                        disabled={quizAnswers[idx] === undefined}
+                        className="px-6 py-2.5 bg-slate-900 hover:bg-slate-800 disabled:opacity-30 disabled:hover:bg-slate-900 text-white font-bold text-sm rounded-lg transition-all"
+                      >
+                        Cek Jawaban
+                      </button>
+                    ) : (
+                      <div className={`p-4 rounded-xl border ${isCorrect ? 'bg-emerald-50 border-emerald-200' : 'bg-rose-50 border-rose-200'} animate-fadeIn`}>
+                        <div className="flex items-center gap-2 mb-1.5">
+                          <span className="text-lg">{isCorrect ? '✅' : '❌'}</span>
+                          <span className={`font-extrabold ${isCorrect ? 'text-emerald-800' : 'text-rose-800'}`}>
+                            {isCorrect ? 'Tepat Sekali!' : 'Masih Kurang Tepat.'}
+                          </span>
+                        </div>
+                        <p className={`text-sm leading-relaxed ${isCorrect ? 'text-emerald-700' : 'text-rose-700'}`}>
+                          {quiz.explanation}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </section>
-          
-        </div>
 
-        {/* Bottom CTA (Lompat ke Simulator) */}
-        <div className="mt-16 bg-blue-600 rounded-3xl p-10 text-center shadow-[0_10px_40px_rgba(37,99,235,0.3)]">
-          <h3 className="text-2xl font-extrabold text-white mb-4">Sudah Paham Teorinya?</h3>
-          <p className="text-blue-100 mb-8 max-w-lg mx-auto">Sekarang saatnya melihat bagaimana kode-kode di atas berjalan nyata menyusun balok array di dalam Simulator.</p>
-          <Link href="/playground" className="inline-block bg-white text-blue-600 font-extrabold px-8 py-4 rounded-xl shadow-lg hover:scale-105 transition-transform">
-            Buka Simulator Sekarang
-          </Link>
-        </div>
+          {/* Bottom CTA (Lompat ke Simulator) */}
+          <div className="mt-16 bg-blue-600 rounded-3xl p-10 text-center shadow-xl">
+            <h3 className="text-2xl font-extrabold text-white mb-4">Lulus Ujian Teori?</h3>
+            <p className="text-blue-100 mb-8 max-w-lg mx-auto">Terapkan logika Anda dengan mengatur tempo, mengubah deret array, dan melihat perpindahan memori secara visual di Simulator.</p>
+            <Link href="/playground" className="inline-block bg-white text-blue-600 font-extrabold px-8 py-4 rounded-xl shadow-lg hover:scale-105 transition-transform">
+              Buka Simulator Sekarang
+            </Link>
+          </div>
 
+        </div>
       </article>
+      
+      <Footer />
     </div>
   );
 }
